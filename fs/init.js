@@ -6,11 +6,13 @@ load('api_mqtt.js');
 load('api_timer.js');
 load('api_sys.js');
 load('api_uart.js');
+load('api_discovery.js'); // Home Assistant Discovery module  
 
-
+//configuration parameters
 let online = false;                               // Connected to the cloud?
 
 let result;
+let discoverySent = false;                       // Has Home Assistant Discovery info been sent?
 let meterproto = [ 
   ["DateTime","1.0.0"], 
   ["TotalActivePowerIn","1.8.0"],
@@ -35,8 +37,11 @@ let meterproto = [
   ["L3Current","71.7.0"], 
 ];
 let protolen= meterproto.length;
-let meterdata = JSON.parse('{"ActivePowerIn":0, "ActivePowerEx":0, "L1ActivePowerIn":"21", "L2ActivePowerIn":22, "L3ActivePowerIn":22, "L1Current":"0.00", "L2Current":"0.00", "L3Current":"0.00" }');
+let meterdata = JSON.parse('{"L1ActivePowerIn":"21", "L2ActivePowerIn":22, "L3ActivePowerIn":22, "L1Current":"0.00", "L2Current":"0.00", "L3Current":"0.00" }');
 
+function frameIsComplete() {  // Check if we have received all data points in the protocol
+  return Object.keys(meterdata).length === protolen;
+}
 
 //Pin Mapping
 let pin_LED=23;
@@ -64,7 +69,7 @@ UART.setDispatcher(2, function(uartNo) {
   if (ra > 0) {
     // Received new data: 
     let data = UART.read(uartNo);
-    print('Number of characters received:', data.length, '\n\r');
+//    print('Number of characters received:', data.length, '\n\r');
 //    print('Received UART data:', data);
 
     let lines = [ "1", "2"];
@@ -81,7 +86,7 @@ UART.setDispatcher(2, function(uartNo) {
       //print(lines[i]);
     }
 
-    print('Parsed ' , i, ' lines'); // Tell how many lines that where found in the original data
+  //  print('Parsed ' , i, ' lines'); // Tell how many lines that where found in the original data
 
     for (let x=1; x < i; x++) { // find position for start (, end ) and also the * that tells where the unit starts
       cr1=lines[x].indexOf( '(' , 0);
@@ -123,7 +128,11 @@ UART.setRxEnabled(2, true);
 Timer.set(6000, Timer.REPEAT, function() {
     if (online ){ 
     reportState();
-    GPIO.toggle(pin_LED);
+    if (!discoverySent) {   // Run only once 
+      // När meterdata är färdigbyggd → generera sensorer 
+      let sensors = SensorGen.buildSensors(meterdata);
+      Discovery.auto(sensors); 
+      discoverySent = true; }  // Send Home Assistant Discovery info once when connected to cloud
   } 
 }, null) ;
 
@@ -137,9 +146,10 @@ function reportState() {
       let topic = Cfg.get('site.id') + '/'+Cfg.get('site.position')+'/status';
       print('== Publishing to ' + topic + ':', message);      
       MQTT.pub(topic, message, 0 /* QoS */);
+      GPIO.toggle(pin_LED);
 
     } else if (sendMQTT) {
-      print('== Not connected!');
+     // print('== Not connected!');
     }
 } 
 
