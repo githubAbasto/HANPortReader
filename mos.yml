@@ -21,15 +21,15 @@ config_schema:
   - ["site", "o", {hide: true}]
   - ["site.id", "s",  "mainutilitymeter", {title: "Site name/location"}]
   - ["site.position", "s", "wallbox", {title: "Electrical cabinette position"}]
-  
+  - ["wifi.sta.hostname", "s", "hanreader", {title: "mDNS hostname (used as hostname.local)"}]
+  - ["mdns.enable", true]
+
 
 tags:
   - js
   - c
 sources:
  - src 
-
-build_vars:
 
 filesystem:
   - fs
@@ -47,5 +47,6 @@ libs:
  - origin: https://github.com/mongoose-os-libs/rpc-service-wifi
  - origin: https://github.com/mongoose-os-libs/ota-http-server
  - origin: https://github.com/mongoose-os-libs/wifi-setup-web-ui
- - origin: https://github.com/mongoose-os-libs/dash  
+ - origin: https://github.com/mongoose-os-libs/mdns
+ - origin: https://github.com/mongoose-os-libs/dash
 
