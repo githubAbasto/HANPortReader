@@ -5,155 +5,53 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>HANPortReader Setup</title>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: #ffffff;
-    color: #1a2b1a;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 24px 16px 48px;
-  }
-  header {
-    text-align: center;
-    margin-bottom: 32px;
-  }
-  header img { max-width: 162px; height: auto; }
-  header p {
-    margin-top: 6px;
-    font-size: 0.85rem;
-    letter-spacing: 0.08em;
-    color: #3a7d44;
-    font-style: italic;
-  }
-  h1 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #1a2b1a;
-    margin-bottom: 24px;
-  }
-  .card {
-    width: 100%;
-    max-width: 480px;
-    background: #f9faf9;
-    border: 1px solid #ccd9cc;
-    border-radius: 8px;
-    padding: 20px 24px;
-    margin-bottom: 20px;
-  }
-  .card h2 {
-    font-size: 0.8rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: #3a7d44;
-    margin-bottom: 16px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #ccd9cc;
-  }
-  .field { margin-bottom: 14px; }
-  .field:last-child { margin-bottom: 0; }
-  label {
-    display: block;
-    font-size: 0.82rem;
-    font-weight: 600;
-    margin-bottom: 5px;
-    color: #1a2b1a;
-  }
-  input, select {
-    width: 100%;
-    padding: 9px 12px;
-    border: 1px solid #aac0aa;
-    border-radius: 5px;
-    font-size: 0.9rem;
-    color: #1a2b1a;
-    background: #fff;
-    outline: none;
-    transition: border-color 0.15s;
-  }
-  input:focus, select:focus { border-color: #3a7d44; box-shadow: 0 0 0 2px #3a7d4420; }
-  .pw-wrap { position: relative; }
-  .pw-wrap input { padding-right: 70px; }
-  .pw-toggle {
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 0.75rem;
-    color: #3a7d44;
-    font-weight: 600;
-    padding: 4px 6px;
-  }
-  .wifi-row { display: flex; gap: 8px; align-items: flex-end; }
-  .wifi-row select { flex: 1; }
-  .scan-btn {
-    white-space: nowrap;
-    padding: 9px 14px;
-    background: #f0f5f0;
-    border: 1px solid #aac0aa;
-    border-radius: 5px;
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: #3a7d44;
-    cursor: pointer;
-  }
-  .scan-btn:hover { background: #e2eee2; }
-  #ssid-manual { display: none; margin-top: 8px; }
-  .save-btn {
-    display: block;
-    width: 100%;
-    max-width: 480px;
-    padding: 13px;
-    background: #3a7d44;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    font-size: 1rem;
-    font-weight: 700;
-    cursor: pointer;
-    letter-spacing: 0.04em;
-    margin-top: 4px;
-    transition: background 0.15s;
-  }
-  .save-btn:hover { background: #2e6335; }
-  .save-btn:disabled { background: #7aab82; cursor: default; }
-  #status {
-    max-width: 480px;
-    width: 100%;
-    text-align: center;
-    margin-top: 14px;
-    font-size: 0.88rem;
-    min-height: 22px;
-    color: #3a7d44;
-    font-weight: 600;
-  }
-  #status.err { color: #c0392b; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#fff;color:#1a2b1a;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 16px 48px}
+header{text-align:center;margin-bottom:28px}
+.logo{font-size:1.6rem;font-weight:800;color:#3a7d44;letter-spacing:-0.02em}
+.logo span{color:#1a2b1a}
+.tagline{margin-top:4px;font-size:0.82rem;color:#3a7d44;font-style:italic}
+h1{font-size:1.1rem;font-weight:600;margin-bottom:20px}
+.card{width:100%;max-width:460px;background:#f9faf9;border:1px solid #ccd9cc;border-radius:8px;padding:18px 22px;margin-bottom:18px}
+.card h2{font-size:0.75rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#3a7d44;margin-bottom:14px;padding-bottom:7px;border-bottom:1px solid #ccd9cc}
+.field{margin-bottom:12px}
+.field:last-child{margin-bottom:0}
+label{display:block;font-size:0.8rem;font-weight:600;margin-bottom:4px}
+input,select{width:100%;padding:8px 11px;border:1px solid #aac0aa;border-radius:5px;font-size:0.88rem;color:#1a2b1a;background:#fff;outline:none}
+input:focus,select:focus{border-color:#3a7d44;box-shadow:0 0 0 2px #3a7d4420}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:60px}
+.pw-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:0.72rem;color:#3a7d44;font-weight:700;padding:4px}
+.scan-row{display:flex;gap:8px;align-items:flex-end}
+.scan-row select{flex:1}
+.scan-btn{white-space:nowrap;padding:8px 13px;background:#f0f5f0;border:1px solid #aac0aa;border-radius:5px;font-size:0.8rem;font-weight:700;color:#3a7d44;cursor:pointer}
+.scan-btn:hover{background:#e2eee2}
+#ssid-manual{display:none;margin-top:7px}
+.hint{display:block;margin-top:3px;font-size:0.75rem;color:#5a7a5a}
+.save-btn{display:block;width:100%;max-width:460px;padding:12px;background:#3a7d44;color:#fff;border:none;border-radius:6px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-top:2px}
+.save-btn:hover{background:#2e6335}
+.save-btn:disabled{background:#7aab82;cursor:default}
+#status{max-width:460px;width:100%;text-align:center;margin-top:12px;font-size:0.85rem;min-height:20px;color:#3a7d44;font-weight:600}
+#status.err{color:#c0392b}
 </style>
 </head>
 <body>
-
 <header>
-  <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKIAAABQCAYAAACaqK4JAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAACXBIWXMAAC4jAAAuIwF4pT92AAALBmlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS40LjAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgICAgICAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgICAgICAgICAgeG1sbnM6cGhvdG9zaG9wPSJodHRwOi8vbnMuYWRvYmUuY29tL3Bob3Rvc2hvcC8xLjAvIgogICAgICAgICAgICB4bWxuczpleGlmPSJodHRwOi8vbnMuYWRvYmUuY29tL2V4aWYvMS4wLyIKICAgICAgICAgICAgeG1sbnM6ZGM9Imh0dHA6Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEvIgogICAgICAgICAgICB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgICAgICAgICB4bWxuczpzdEV2dD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL3NUeXBlL1Jlc291cmNlRXZlbnQjIj4KICAgICAgICAgPHRpZmY6UmVzb2x1dGlvblVuaXQ+MjwvdGlmZjpSZXNvbHV0aW9uVW5pdD4KICAgICAgICAgPHRpZmY6T3JpZW50YXRpb24+MTwvdGlmZjpPcmllbnRhdGlvbj4KICAgICAgICAgPHBob3Rvc2hvcDpJQ0NQcm9maWxlPnNSR0IgSUVDNjE5NjYtMi4xPC9waG90b3Nob3A6SUNDUHJvZmlsZT4KICAgICAgICAgPHBob3Rvc2hvcDpEb2N1bWVudEFuY2VzdG9ycz4KICAgICAgICAgICAgPHJkZjpCYWc+CiAgICAgICAgICAgICAgIDxyZGY6bGk+MDk4NUI2NkRBMzZFNDNGNDVBNUNDNjg0MjQ0NzkwMTA8L3JkZjpsaT4KICAgICAgICAgICAgICAgPHJkZjpsaT43NDUwOEUyRjVGNTZFRUVCNEU2OUIzQTI2NDBDRDc2RDwvcmRmOmxpPgogICAgICAgICAgICA8L3JkZjpCYWc+CiAgICAgICAgIDwvcGhvdG9zaG9wOkRvY3VtZW50QW5jZXN0b3JzPgogICAgICAgICA8cGhvdG9zaG9wOkNvbG9yTW9kZT4zPC9waG90b3Nob3A6Q29sb3JNb2RlPgogICAgICAgICA8ZXhpZjpQaXhlbFhEaW1lbnNpb24+NDk1MDwvZXhpZjpQaXhlbFhEaW1lbnNpb24+CiAgICAgICAgIDxleGlmOkNvbG9yU3BhY2U+MTwvZXhpZjpDb2xvclNwYWNlPgogICAgICAgICA8ZXhpZjpQaXhlbFlEaW1lbnNpb24+MzgyNTwvZXhpZjpQaXhlbFlEaW1lbnNpb24+CiAgICAgICAgIDxkYzpmb3JtYXQ+aW1hZ2UvanBlZzwvZGM6Zm9ybWF0PgogICAgICAgICA8eG1wOk1ldGFkYXRhRGF0ZT4yMDE4LTEwLTE2VDIxOjI0OjE3KzAyOjAwPC94bXA6TWV0YWRhdGFEYXRlPgogICAgICAgICA8eG1wOkNyZWF0ZURhdGU+MjAxOC0xMC0xNlQyMToyNDoxNyswMjowMDwveG1wOkNyZWF0ZURhdGU+CiAgICAgICAgIDx4bXA6TW9kaWZ5RGF0ZT4yMDE4LTEwLTE2VDIxOjI0OjE3KzAyOjAwPC94bXA6TW9kaWZ5RGF0ZT4KICAgICAgICAgPHhtcDpDcmVhdG9yVG9vbD5BZG9iZSBQaG90b3Nob3AgQ1M2IChXaW5kb3dzKTwveG1wOkNyZWF0b3JUb29sPgogICAgICAgICA8eG1wTU06SGlzdG9yeT4KICAgICAgICAgICAgPHJkZjpTZXE+CiAgICAgICAgICAgICAgIDxyZGY6bGkgcmRmOnBhcnNlVHlwZT0iUmVzb3VyY2UiPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6c29mdHdhcmVBZ2VudD5BZG9iZSBQaG90b3Nob3AgQ1M2IChXaW5kb3dzKTwvc3RFdnQ6c29mdHdhcmVBZ2VudD4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OndoZW4+MjAxOC0xMC0xNlQyMToyNDoxNyswMjowMDwvc3RFdnQ6d2hlbj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0Omluc3RhbmNlSUQ+eG1wLmlpZDpGRkVEMjkxMzc5RDFFODExQTM2MEE4QjdFQUI3QkYwNTwvc3RFdnQ6aW5zdGFuY2VJRD4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OmFjdGlvbj5jcmVhdGVkPC9zdEV2dDphY3Rpb24+CiAgICAgICAgICAgICAgIDwvcmRmOmxpPgogICAgICAgICAgICAgICA8cmRmOmxpIHJkZjpwYXJzZVR5cGU9IlJlc291cmNlIj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OnNvZnR3YXJlQWdlbnQ+QWRvYmUgUGhvdG9zaG9wIENTNiAoV2luZG93cyk8L3N0RXZ0OnNvZnR3YXJlQWdlbnQ+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDpjaGFuZ2VkPi88L3N0RXZ0OmNoYW5nZWQ+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDp3aGVuPjIwMTgtMTAtMTZUMjE6MjQ6MTcrMDI6MDA8L3N0RXZ0OndoZW4+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDppbnN0YW5jZUlEPnhtcC5paWQ6MDBFRTI5MTM3OUQxRTgxMUEzNjBBOEI3RUFCN0JGMDU8L3N0RXZ0Omluc3RhbmNlSUQ+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDphY3Rpb24+c2F2ZWQ8L3N0RXZ0OmFjdGlvbj4KICAgICAgICAgICAgICAgPC9yZGY6bGk+CiAgICAgICAgICAgIDwvcmRmOlNlcT4KICAgICAgICAgPC94bXBNTTpIaXN0b3J5PgogICAgICAgICA8eG1wTU06SW5zdGFuY2VJRD54bXAuaWlkOjAwRUUyOTEzNzlEMUU4MTFBMzYwQThCN0VBQjdCRjA1PC94bXBNTTpJbnN0YW5jZUlE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" alt="PowerConcern" style="max-width:162px;height:auto;">
-  <p>Reigniting the joy to care</p>
+  <div class="logo">Power<span>Concern</span></div>
+  <p class="tagline">Reigniting the joy to care</p>
 </header>
-
-<h1>HANPortReader Setup</h1>
+<h1>Device Setup</h1>
 
 <div class="card">
   <h2>Network &amp; Identity</h2>
   <div class="field">
     <label for="hostname">Device hostname</label>
-    <input id="hostname" type="text" placeholder="hanreader" autocomplete="off" spellcheck="false">
-    <small style="display:block;margin-top:4px;color:#5a7a5a;font-size:0.78rem">Accessible as <span id="hostname-preview">hanreader</span>.local after reboot</small>
+    <input id="hostname" type="text" placeholder="hanreader" autocomplete="off">
+    <span class="hint">Accessible as <span id="hn-preview">hanreader</span>.local</span>
   </div>
   <div class="field">
     <label for="site-id">Site ID</label>
-    <input id="site-id" type="text" placeholder="mainutilitymeter" autocomplete="off">
+    <input id="site-id" type="text" placeholder="PC-XXXXXXXX" autocomplete="off">
   </div>
   <div class="field">
     <label for="site-pos">Site position</label>
@@ -164,14 +62,12 @@
 <div class="card">
   <h2>WiFi</h2>
   <div class="field">
-    <label for="ssid-select">WiFi network</label>
-    <div class="wifi-row">
-      <select id="ssid-select">
-        <option value="">-- Scanning… --</option>
-      </select>
+    <label>WiFi network</label>
+    <div class="scan-row">
+      <select id="ssid-sel"><option value="">-- Tap Scan --</option></select>
       <button class="scan-btn" onclick="doScan()">Scan</button>
     </div>
-    <input id="ssid-manual" type="text" placeholder="Enter SSID manually" autocomplete="off" spellcheck="false">
+    <input id="ssid-manual" type="text" placeholder="Enter SSID manually" autocomplete="off">
   </div>
   <div class="field">
     <label for="wifi-pass">WiFi password</label>
@@ -186,14 +82,14 @@
   <h2>MQTT Broker</h2>
   <div class="field">
     <label for="mqtt-server">MQTT server</label>
-    <input id="mqtt-server" type="text" placeholder="broker.example.com:1883" autocomplete="off" spellcheck="false">
+    <input id="mqtt-server" type="text" placeholder="broker.example.com:1883" autocomplete="off">
   </div>
   <div class="field">
-    <label for="mqtt-user">MQTT username</label>
+    <label for="mqtt-user">Username</label>
     <input id="mqtt-user" type="text" autocomplete="off">
   </div>
   <div class="field">
-    <label for="mqtt-pass">MQTT password</label>
+    <label for="mqtt-pass">Password</label>
     <div class="pw-wrap">
       <input id="mqtt-pass" type="password" autocomplete="off">
       <button class="pw-toggle" type="button" onclick="togglePw('mqtt-pass',this)">Show</button>
@@ -205,190 +101,129 @@
 <div id="status"></div>
 
 <script>
-var RPC_URL = 'ws://192.168.4.1/rpc';
-var ws;
-var pendingCalls = {};
-var callId = 1;
+var RPC='ws://192.168.4.1/rpc',ws,pending={},cid=1;
 
-function openWs(cb) {
-  if (ws && ws.readyState === 1) { cb(null); return; }
-  ws = new WebSocket(RPC_URL);
-  ws.onopen = function() { cb(null); };
-  ws.onerror = function(e) { cb('WebSocket error'); };
-  ws.onmessage = function(ev) {
-    var resp;
-    try { resp = JSON.parse(ev.data); } catch(e) { return; }
-    var id = resp.id;
-    if (id && pendingCalls[id]) {
-      var cb2 = pendingCalls[id];
-      delete pendingCalls[id];
-      if (resp.error) cb2(resp.error.message || 'RPC error', null);
-      else cb2(null, resp.result);
-    }
+function openWs(cb){
+  if(ws&&ws.readyState===1){cb(null);return;}
+  ws=new WebSocket(RPC);
+  ws.onopen=function(){cb(null);};
+  ws.onerror=function(){cb('WebSocket error');};
+  ws.onclose=function(){ws=null;};
+  ws.onmessage=function(ev){
+    var r;try{r=JSON.parse(ev.data);}catch(e){return;}
+    var f=pending[r.id];if(!f)return;
+    delete pending[r.id];
+    r.error?f(r.error.message||'RPC error',null):f(null,r.result);
   };
-  ws.onclose = function() { ws = null; };
 }
 
-function rpc(method, params, cb) {
-  openWs(function(err) {
-    if (err) { cb(err, null); return; }
-    var id = callId++;
-    pendingCalls[id] = cb;
-    ws.send(JSON.stringify({id: id, method: method, params: params || {}}));
+function rpc(m,p,cb){
+  openWs(function(e){
+    if(e){cb(e,null);return;}
+    var id=cid++;pending[id]=cb;
+    ws.send(JSON.stringify({id:id,method:m,params:p||{}}));
+    // Timeout after 5s
+    setTimeout(function(){if(pending[id]){delete pending[id];cb('Timeout',null);}},5000);
   });
 }
 
-function setStatus(msg, isErr) {
-  var el = document.getElementById('status');
-  el.textContent = msg;
-  el.className = isErr ? 'err' : '';
-}
+function setStatus(m,e){var el=document.getElementById('status');el.textContent=m;el.className=e?'err':'';}
+function togglePw(id,btn){var i=document.getElementById(id);i.type=i.type==='password'?'text':'password';btn.textContent=i.type==='password'?'Show':'Hide';}
 
-function togglePw(id, btn) {
-  var inp = document.getElementById(id);
-  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = 'Hide'; }
-  else { inp.type = 'password'; btn.textContent = 'Show'; }
-}
-
-// Update hostname preview
-document.getElementById('hostname').addEventListener('input', function() {
-  document.getElementById('hostname-preview').textContent = this.value || 'hanreader';
+document.getElementById('hostname').addEventListener('input',function(){
+  document.getElementById('hn-preview').textContent=this.value||'hanreader';
 });
 
-function doScan() {
-  var sel = document.getElementById('ssid-select');
-  sel.innerHTML = '<option value="">-- Scanning… --</option>';
-  rpc('Wifi.Scan', {}, function(err, result) {
-    sel.innerHTML = '';
-    if (err || !result || !result.results || result.results.length === 0) {
-      // Fall back to manual entry
-      sel.innerHTML = '<option value="__manual__">Enter manually</option>';
-      document.getElementById('ssid-manual').style.display = 'block';
+function doScan(){
+  var sel=document.getElementById('ssid-sel');
+  sel.innerHTML='<option value="">Scanning…</option>';
+  rpc('Wifi.Scan',{},function(err,res){
+    sel.innerHTML='';
+    if(err||!res||!res.results||!res.results.length){
+      sel.innerHTML='<option value="__m__">Enter manually</option>';
+      document.getElementById('ssid-manual').style.display='block';
       return;
     }
-    var nets = result.results.slice().sort(function(a,b){ return b.rssi - a.rssi; });
-    for (var i = 0; i < nets.length; i++) {
-      var o = document.createElement('option');
-      var bars = nets[i].rssi >= -60 ? '▂▄▆█' : nets[i].rssi >= -75 ? '▂▄▆_' : nets[i].rssi >= -85 ? '▂▄__' : '▂___';
-      o.value = nets[i].ssid;
-      o.textContent = nets[i].ssid + '  ' + bars + ' (' + nets[i].rssi + ' dBm)';
+    var nets=res.results.slice().sort(function(a,b){return b.rssi-a.rssi;});
+    for(var i=0;i<nets.length;i++){
+      var o=document.createElement('option');
+      o.value=nets[i].ssid;
+      o.textContent=nets[i].ssid+' ('+nets[i].rssi+' dBm)';
       sel.appendChild(o);
     }
-    var manual = document.createElement('option');
-    manual.value = '__manual__';
-    manual.textContent = '— Enter manually —';
-    sel.appendChild(manual);
-    sel.onchange = function() {
-      document.getElementById('ssid-manual').style.display = (this.value === '__manual__') ? 'block' : 'none';
-    };
+    var m=document.createElement('option');m.value='__m__';m.textContent='— Enter manually —';
+    sel.appendChild(m);
+    sel.onchange=function(){document.getElementById('ssid-manual').style.display=this.value==='__m__'?'block':'none';};
   });
 }
 
-function prefill() {
-  setStatus('Loading current config…');
-  rpc('Config.Get', {key: 'wifi.sta'}, function(err, r) {
-    if (!err && r) {
-      var ssid = r.ssid || '';
-      if (ssid) {
-        var sel = document.getElementById('ssid-select');
-        // Add current SSID as first option so it shows even before scan
-        sel.innerHTML = '';
-        var o = document.createElement('option');
-        o.value = ssid; o.textContent = ssid + '  (current)'; o.selected = true;
-        sel.appendChild(o);
-        var manual = document.createElement('option');
-        manual.value = '__manual__'; manual.textContent = '— Enter manually —';
-        sel.appendChild(manual);
-        sel.onchange = function() {
-          document.getElementById('ssid-manual').style.display = (this.value === '__manual__') ? 'block' : 'none';
-        };
-      }
-      document.getElementById('wifi-pass').value = r.pass || '';
+function prefill(){
+  setStatus('Loading config…');
+  rpc('Config.Get',{key:'wifi.sta'},function(e,r){
+    if(!e&&r){
+      var s=document.getElementById('ssid-sel');
+      if(r.ssid){s.innerHTML='';var o=document.createElement('option');o.value=r.ssid;o.textContent=r.ssid+' (current)';s.appendChild(o);}
+      document.getElementById('wifi-pass').value=r.pass||'';
     }
   });
-  rpc('Config.Get', {key: 'mqtt'}, function(err, r) {
-    if (!err && r) {
-      document.getElementById('mqtt-server').value = r.server || '';
-      document.getElementById('mqtt-user').value = r.user || '';
-      document.getElementById('mqtt-pass').value = r.password || '';
+  rpc('Config.Get',{key:'mqtt'},function(e,r){
+    if(!e&&r){
+      document.getElementById('mqtt-server').value=r.server||'';
+      document.getElementById('mqtt-user').value=r.user||'';
+      document.getElementById('mqtt-pass').value=r.password||'';
     }
   });
-  rpc('Config.Get', {key: 'site'}, function(err, r) {
-    if (!err && r) {
-      document.getElementById('site-id').value = r.id || '';
-      document.getElementById('site-pos').value = r.position || '';
+  rpc('Config.Get',{key:'site'},function(e,r){
+    if(!e&&r){
+      document.getElementById('site-id').value=r.id||'';
+      document.getElementById('site-pos').value=r.position||'';
     }
     setStatus('');
   });
-  rpc('Config.Get', {key: 'wifi.sta.hostname'}, function(err, r) {
-    if (!err && r !== null && r !== undefined) {
-      var hn = (typeof r === 'object' && r.hostname) ? r.hostname : (typeof r === 'string' ? r : '');
-      if (hn) {
-        document.getElementById('hostname').value = hn;
-        document.getElementById('hostname-preview').textContent = hn;
-      }
+  rpc('Config.Get',{key:'wifi.sta.hostname'},function(e,r){
+    if(!e&&r){
+      var h=typeof r==='string'?r:(r.hostname||'');
+      if(h){document.getElementById('hostname').value=h;document.getElementById('hn-preview').textContent=h;}
     }
   });
-  doScan();
 }
 
-function doSave() {
-  var btn = document.getElementById('save-btn');
-  btn.disabled = true;
-  setStatus('Saving…');
+function setKey(obj,key,val){
+  var p=key.split('.'),o=obj;
+  for(var i=0;i<p.length-1;i++){o[p[i]]=o[p[i]]||{};o=o[p[i]];}
+  o[p[p.length-1]]=val;
+}
 
-  var sel = document.getElementById('ssid-select');
-  var ssid = sel.value === '__manual__'
-    ? document.getElementById('ssid-manual').value.trim()
-    : sel.value;
-
-  var configs = [
-    ['wifi.sta.ssid',     ssid],
-    ['wifi.sta.pass',     document.getElementById('wifi-pass').value],
-    ['wifi.sta.hostname', document.getElementById('hostname').value.trim() || 'hanreader'],
-    ['mqtt.server',       document.getElementById('mqtt-server').value.trim()],
-    ['mqtt.user',         document.getElementById('mqtt-user').value],
-    ['mqtt.password',     document.getElementById('mqtt-pass').value],
-    ['site.id',           document.getElementById('site-id').value.trim()],
-    ['site.position',     document.getElementById('site-pos').value.trim()],
+function doSave(){
+  var btn=document.getElementById('save-btn');
+  btn.disabled=true;setStatus('Saving…');
+  var sel=document.getElementById('ssid-sel');
+  var ssid=sel.value==='__m__'?document.getElementById('ssid-manual').value.trim():sel.value;
+  var fields=[
+    ['wifi.sta.ssid',ssid],
+    ['wifi.sta.pass',document.getElementById('wifi-pass').value],
+    ['wifi.sta.hostname',document.getElementById('hostname').value.trim()||'hanreader'],
+    ['mqtt.server',document.getElementById('mqtt-server').value.trim()],
+    ['mqtt.user',document.getElementById('mqtt-user').value],
+    ['mqtt.password',document.getElementById('mqtt-pass').value],
+    ['site.id',document.getElementById('site-id').value.trim()],
+    ['site.position',document.getElementById('site-pos').value.trim()],
   ];
-
-  var saved = 0;
-  var failed = 0;
-
-  function saveNext(idx) {
-    if (idx >= configs.length) {
-      if (failed > 0) {
-        setStatus('Some settings failed to save. Check connection.', true);
-        btn.disabled = false;
-        return;
-      }
-      setStatus('Saved. Rebooting device…');
-      setTimeout(function() {
-        rpc('Sys.Reboot', {delay_ms: 1000}, function() {});
-      }, 300);
+  var i=0,errs=0;
+  function next(){
+    if(i>=fields.length){
+      if(errs){setStatus('Some settings failed to save.',true);btn.disabled=false;return;}
+      setStatus('Saved! Rebooting…');
+      setTimeout(function(){rpc('Sys.Reboot',{delay_ms:1000},function(){});},400);
       return;
     }
-    var key = configs[idx][0];
-    var val = configs[idx][1];
-    var params = {config: {}};
-    // Build nested object from dot-notation key
-    var parts = key.split('.');
-    var obj = params.config;
-    for (var i = 0; i < parts.length - 1; i++) {
-      obj[parts[i]] = obj[parts[i]] || {};
-      obj = obj[parts[i]];
-    }
-    obj[parts[parts.length - 1]] = val;
-    rpc('Config.Set', params, function(err) {
-      if (err) failed++;
-      saveNext(idx + 1);
-    });
+    var cfg={};setKey(cfg,fields[i][0],fields[i][1]);
+    rpc('Config.Set',{config:cfg},function(e){if(e)errs++;i++;next();});
   }
-  saveNext(0);
+  next();
 }
 
-window.onload = prefill;
+window.onload=prefill;
 </script>
 </body>
 </html>
