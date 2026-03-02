@@ -64,6 +64,10 @@ function WatchdogFeedWifi() {
 
 // Kontrollera WiFi/MQTT var 15:e sekund
 Timer.set(15000, Timer.REPEAT, function() {
+  if (Cfg.get('wifi.sta.ssid') === '') {
+    lastMqttOkTs = Timer.now(); // not yet commissioned, keep watchdog fed silently
+    return;
+  }
   let delta = Timer.now() - lastMqttOkTs;
 
   // Om vi är online men inte lyckats publicera på länge → WiFi hänger
