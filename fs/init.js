@@ -12,6 +12,15 @@ load('sensor_gen.js'); // Sensor generator module based on meterdata struct and 
 //configuration parameters
 let online = false;                               // Connected to the cloud?
 
+// Auto-assign site.id from MAC address on first boot (if still factory default)
+if (Cfg.get('site.id') === 'mainutilitymeter') {
+  let siteId = 'PC-' + Sys.getInfo().mac.slice(-8).toUpperCase();
+  Cfg.set({site: {id: siteId}});
+  RPC.call('Config.Save', {reboot: false}, function(resp, err) {
+    print('Auto-assigned site.id:', siteId);
+  }, null);
+}
+
 let result;
 let discoverySent = false;                       // Has Home Assistant Discovery info been sent?
 let meterproto = [ 
