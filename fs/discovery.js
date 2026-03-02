@@ -30,6 +30,11 @@ let Discovery = {
   },
 
   auto: function(list) {
+    // If already connected, publish immediately (CONNACK already fired)
+    if (MQTT.isConnected()) {
+      Discovery.publishAll(list);
+    }
+    // Also register handler to re-publish on future reconnects
     MQTT.setEventHandler(function(conn, ev, edata) {
       if (ev === MQTT.EV_CONNACK) {
         Discovery.publishAll(list);
@@ -37,5 +42,3 @@ let Discovery = {
     }, null);
   }
 };
-
-exports.Discovery = Discovery;

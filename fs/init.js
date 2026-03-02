@@ -6,7 +6,8 @@ load('api_mqtt.js');
 load('api_timer.js');
 load('api_sys.js');
 load('api_uart.js');
-load('api_discovery.js'); // Home Assistant Discovery module  
+load('discovery.js'); // Home Assistant Discovery module  
+load('sensor_gen.js'); // Sensor generator module based on meterdata struct and Home Assistant Discovery format
 
 //configuration parameters
 let online = false;                               // Connected to the cloud?
@@ -38,6 +39,54 @@ let meterproto = [
 ];
 let protolen= meterproto.length;
 let meterdata = JSON.parse('{"L1ActivePowerIn":"21", "L2ActivePowerIn":22, "L3ActivePowerIn":22, "L1Current":"0.00", "L2Current":"0.00", "L3Current":"0.00" }');
+
+
+// --- Watchdog ---
+let APP_TIMEOUT = 30;           // sekunder utan HAN-data = reboot
+let WIFI_TIMEOUT = 80;        // sekunder utan MQTT-publish = reboot
+
+let lastHanDataTs = Timer.now();
+let lastMqttOkTs = Timer.now();
+
+// Anropas när MQTT-publish lyckas
+function WatchdogFeedWifi() {
+  lastMqttOkTs = Timer.now();
+}
+
+// Kontrollera WiFi/MQTT var 15:e sekund
+Timer.set(15000, Timer.REPEAT, function() {
+  let delta = Timer.now() - lastMqttOkTs;
+
+  // Om vi är online men inte lyckats publicera på länge → WiFi hänger
+  if (online && delta > WIFI_TIMEOUT) {
+    print('WiFi/MQTT watchdog: no successful publish for ' + delta + 's, rebooting');
+    Sys.reboot(500);
+  }
+
+  // Om vi varit offline för länge → WiFi har tappat och återansluter inte
+  if (!online && delta > WIFI_TIMEOUT * 2) {
+    print('WiFi watchdog: offline too long, rebooting');
+    Sys.reboot(500);
+  }
+}, null);
+
+
+
+// Application watchdog – ser till att UART-flödet inte dör tyst
+Timer.set(10000, Timer.REPEAT, function() {
+  let delta = Timer.now() - lastHanDataTs;
+  if (delta > APP_TIMEOUT) {
+    //print('HAN data timeout (' + delta + 's), rebooting system');
+    print('HAN data timeout (' , delta , 's), rebooting system');
+
+    Sys.reboot(500);
+  }
+}, null);
+
+// Funktion som din UART-parser anropar när data mottagits
+function WatchdogFeedHan() {
+  lastHanDataTs = Timer.now();
+}
 
 function frameIsComplete() {  // Check if we have received all data points in the protocol
   return Object.keys(meterdata).length === protolen;
@@ -71,6 +120,7 @@ UART.setDispatcher(2, function(uartNo) {
     let data = UART.read(uartNo);
 //    print('Number of characters received:', data.length, '\n\r');
 //    print('Received UART data:', data);
+      WatchdogFeedHan();   // Tala om att vi fått giltig HAN-data
 
     let lines = [ "1", "2"];
 
@@ -111,12 +161,15 @@ UART.setDispatcher(2, function(uartNo) {
       }   
       
     }
-    //If we are exporting power, add - sign to the current value instead of RMS 
-    if (meterdata["L1ActivePowerEx"][0] !== "0000.000" && meterdata["L1Current"][0].at(0) !==0x2d)
+    //If we are exporting power, add - sign to the current value instead of RMS
+    if (meterdata["L1ActivePowerEx"] && meterdata["L1Current"] &&
+        meterdata["L1ActivePowerEx"][0] !== "0000.000" && meterdata["L1Current"][0].at(0) !== 0x2d)
       meterdata["L1Current"][0] = "-" + meterdata["L1Current"][0];
-    if (meterdata["L2ActivePowerEx"][0] !== "0000.000" && meterdata["L2Current"][0].at(0) !==0x2d)
+    if (meterdata["L2ActivePowerEx"] && meterdata["L2Current"] &&
+        meterdata["L2ActivePowerEx"][0] !== "0000.000" && meterdata["L2Current"][0].at(0) !== 0x2d)
       meterdata["L2Current"][0] = "-" + meterdata["L2Current"][0];
-    if (meterdata["L3ActivePowerEx"][0] !== "0000.000" && meterdata["L3Current"][0].at(0) !==0x2d)
+    if (meterdata["L3ActivePowerEx"] && meterdata["L3Current"] &&
+        meterdata["L3ActivePowerEx"][0] !== "0000.000" && meterdata["L3Current"][0].at(0) !== 0x2d)
       meterdata["L3Current"][0] = "-" + meterdata["L3Current"][0];
   }
 }, null);
@@ -126,14 +179,16 @@ UART.setRxEnabled(2, true);
 
 //Update state every 6 second, and report to cloud if online
 Timer.set(6000, Timer.REPEAT, function() {
-    if (online ){ 
+    if (online) {
     reportState();
-    if (!discoverySent) {   // Run only once 
-      // När meterdata är färdigbyggd → generera sensorer 
-      let sensors = SensorGen.buildSensors(meterdata);
-      Discovery.auto(sensors); 
-      discoverySent = true; }  // Send Home Assistant Discovery info once when connected to cloud
-  } 
+    if (!discoverySent && frameIsComplete()) {  // Wait for a full HAN frame before sending discovery
+      let stateTopic = Cfg.get('site.id') + '/' + Cfg.get('site.position') + '/status';
+      let deviceId = Cfg.get('site.id');
+      let sensors = SensorGen.buildSensors(meterdata, deviceId, stateTopic);
+      Discovery.auto(sensors);
+      discoverySent = true;
+    }
+  }
 }, null) ;
 
 
@@ -145,10 +200,13 @@ function reportState() {
     if (MQTT.isConnected() && sendMQTT) {
       let topic = Cfg.get('site.id') + '/'+Cfg.get('site.position')+'/status';
       print('== Publishing to ' + topic + ':', message);      
-      MQTT.pub(topic, message, 0 /* QoS */);
-      GPIO.toggle(pin_LED);
-
-    } else if (sendMQTT) {
+      let ok = MQTT.pub(topic, message, 0 /* QoS */);
+      if (ok) {
+        WatchdogFeedWifi(); // Tala om att vi lyckats publicera på MQTT
+      } else {
+        print('== MQTT publish failed');
+      }
+    } else if (sendMQTT) { 
      // print('== Not connected!');
     }
 } 
