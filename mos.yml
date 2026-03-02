@@ -23,6 +23,9 @@ config_schema:
   - ["site.position", "s", "wallbox", {title: "Electrical cabinette position"}]
   - ["wifi.sta.hostname", "s", "hanreader", {title: "mDNS hostname (used as hostname.local)"}]
   - ["mdns.enable", true]
+  - ["cportal.enable", "b", true]
+  - ["cportal.index", "s", "index.html"]
+  - ["cportal.any", "b", true]
 
 
 tags:
@@ -45,6 +48,6 @@ libs:
  - origin: https://github.com/mongoose-os-libs/rpc-service-config
  - origin: https://github.com/mongoose-os-libs/ota-http-server
  - origin: https://github.com/mongoose-os-libs/wifi-setup-web-ui
- - origin: https://github.com/mongoose-os-libs/dns-sd
  - origin: https://github.com/mongoose-os-libs/dash
+ - origin: https://github.com/tripflex/captive-portal
 
