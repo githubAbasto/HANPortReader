@@ -117,13 +117,12 @@ function openWs(cb){
   };
 }
 
-function rpc(m,p,cb){
+function rpc(m,p,cb,timeout){
   openWs(function(e){
     if(e){cb(e,null);return;}
     var id=cid++;pending[id]=cb;
     ws.send(JSON.stringify({id:id,method:m,params:p||{}}));
-    // Timeout after 5s
-    setTimeout(function(){if(pending[id]){delete pending[id];cb('Timeout',null);}},5000);
+    setTimeout(function(){if(pending[id]){delete pending[id];cb('Timeout',null);}},timeout||15000);
   });
 }
 
