@@ -74,6 +74,10 @@ Timer.set(15000, Timer.REPEAT, function() {
 
 // Application watchdog – ser till att UART-flödet inte dör tyst
 Timer.set(10000, Timer.REPEAT, function() {
+  if (Cfg.get('wifi.sta.ssid') === '') {
+    lastHanDataTs = Timer.now(); // not yet commissioned, keep watchdog fed silently
+    return;
+  }
   let delta = Timer.now() - lastHanDataTs;
   if (delta > APP_TIMEOUT) {
     //print('HAN data timeout (' + delta + 's), rebooting system');
@@ -211,6 +215,21 @@ function reportState() {
     }
 } 
 
+
+// Expose live meter data to local devices (e.g. EVCharger)
+RPC.addHandler('HAN.GetData', function(args) {
+  return meterdata;
+});
+
+// Expose a lightweight status/identity endpoint
+RPC.addHandler('HAN.GetInfo', function(args) {
+  return {
+    site_id: Cfg.get('site.id'),
+    site_position: Cfg.get('site.position'),
+    online: online,
+    frame_complete: frameIsComplete()
+  };
+});
 
 Event.on(Event.CLOUD_CONNECTED, function() {
   online = true;
