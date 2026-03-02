@@ -137,9 +137,17 @@ document.getElementById('hostname').addEventListener('input',function(){
 function doScan(){
   var sel=document.getElementById('ssid-sel');
   sel.innerHTML='<option value="">Scanning…</option>';
+  setStatus('Scanning, please wait…');
   rpc('Wifi.Scan',{},function(err,res){
     sel.innerHTML='';
-    if(err||!res||!res.results||!res.results.length){
+    setStatus('');
+    if(err){
+      sel.innerHTML='<option value="__m__">Enter manually</option>';
+      document.getElementById('ssid-manual').style.display='block';
+      setStatus('Scan: '+err,true);
+      return;
+    }
+    if(!res||!res.results||!res.results.length){
       sel.innerHTML='<option value="__m__">Enter manually</option>';
       document.getElementById('ssid-manual').style.display='block';
       return;
@@ -154,7 +162,7 @@ function doScan(){
     var m=document.createElement('option');m.value='__m__';m.textContent='— Enter manually —';
     sel.appendChild(m);
     sel.onchange=function(){document.getElementById('ssid-manual').style.display=this.value==='__m__'?'block':'none';};
-  });
+  },25000);
 }
 
 function prefill(){
