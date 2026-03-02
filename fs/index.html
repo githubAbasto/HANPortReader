@@ -101,28 +101,29 @@ input:focus,select:focus{border-color:#3a7d44;box-shadow:0 0 0 2px #3a7d4420}
 <div id="status"></div>
 
 <script>
-var RPC='ws://192.168.4.1/rpc',ws,pending={},cid=1;
-
-function openWs(cb){
-  if(ws&&ws.readyState===1){cb(null);return;}
-  ws=new WebSocket(RPC);
-  ws.onopen=function(){cb(null);};
-  ws.onerror=function(){cb('WebSocket error');};
-  ws.onclose=function(){ws=null;};
-  ws.onmessage=function(ev){
-    var r;try{r=JSON.parse(ev.data);}catch(e){return;}
-    var f=pending[r.id];if(!f)return;
-    delete pending[r.id];
-    r.error?f(r.error.message||'RPC error',null):f(null,r.result);
-  };
-}
-
 function rpc(m,p,cb,timeout){
-  openWs(function(e){
-    if(e){cb(e,null);return;}
-    var id=cid++;pending[id]=cb;
-    ws.send(JSON.stringify({id:id,method:m,params:p||{}}));
-    setTimeout(function(){if(pending[id]){delete pending[id];cb('Timeout',null);}},timeout||15000);
+  var done=false;
+  var ctrl=typeof AbortController!=='undefined'?new AbortController():null;
+  var tid=setTimeout(function(){
+    if(done)return;done=true;
+    if(ctrl)ctrl.abort();
+    cb('Timeout',null);
+  },timeout||15000);
+  fetch('/rpc/'+m,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(p||{}),
+    signal:ctrl?ctrl.signal:undefined
+  })
+  .then(function(r){return r.json();})
+  .then(function(j){
+    if(done)return;done=true;clearTimeout(tid);
+    if(j&&j.error)cb(j.error.message||'RPC error',null);
+    else cb(null,j);
+  })
+  .catch(function(e){
+    if(done)return;done=true;clearTimeout(tid);
+    cb(e.name==='AbortError'?'Timeout':e.message||'Fetch error',null);
   });
 }
 
