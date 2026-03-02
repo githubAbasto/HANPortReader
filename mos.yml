@@ -23,9 +23,9 @@ config_schema:
   - ["site.position", "s", "wallbox", {title: "Electrical cabinette position"}]
   - ["wifi.sta.hostname", "s", "hanreader", {title: "mDNS hostname (used as hostname.local)"}]
   - ["mdns.enable", true]
-  - ["cportal.enable", "b", true]
+  - ["cportal.enable", "b", 1]
   - ["cportal.index", "s", "index.html"]
-  - ["cportal.any", "b", true]
+  - ["cportal.any", "b", 1]
 
 
 tags:
