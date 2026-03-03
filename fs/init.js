@@ -12,13 +12,13 @@ load('sensor_gen.js'); // Sensor generator module based on meterdata struct and 
 //configuration parameters
 let online = false;                               // Connected to the cloud?
 
-// Auto-assign site.id from MAC address on first boot (if still factory default)
-// MAC format from Sys.getInfo() is "AA:BB:CC:DD:EE:FF" (17 chars, already uppercase)
-// Extract last 4 bytes (positions 6-16) as 8 hex digits without colons.
-// Avoid toUpperCase() and negative slice() — not available in mJS.
+// Auto-assign site.id from device.id on first boot (if still factory default).
+// Cfg.get('device.id') is always set by Mongoose OS from the hardware MAC.
 if (Cfg.get('site.id') === 'mainutilitymeter') {
-  let mac = Sys.getInfo().mac;
-  let siteId = 'PC-' + mac.slice(6,8) + mac.slice(9,11) + mac.slice(12,14) + mac.slice(15,17);
+  let devId = Cfg.get('device.id');
+  print('device.id:', devId);
+  let len = devId ? devId.length : 0;
+  let siteId = len >= 6 ? ('PC-' + devId.slice(len - 6, len)) : 'PC-000000';
   Cfg.set({site: {id: siteId}});
   RPC.call('Config.Save', {reboot: false}, function(resp, err) {
     print('Auto-assigned site.id:', siteId);
