@@ -10,9 +10,9 @@ mongoose_os_version: ${mos.version}
 config_schema:
   - [mqtt.enable", true]
   - ["mqtt.server", "mqtt.symlink.se:1883"]
-  - ["mqtt.cloud_events", true]
   - ["mqtt.user",""]
   - ["mqtt.password", ""]
+  - ["wifi.sta.enable", true]
   - ["wifi.ap.enable", true]
   - ["wifi.ap.trigger_on_gpio", 0]
   - ["wifi.ap.hostname", "HANReader"]
@@ -49,6 +49,5 @@ libs:
  - origin: https://github.com/mongoose-os-libs/rpc-service-wifi
  - origin: https://github.com/mongoose-os-libs/rpc-service-config
  - origin: https://github.com/mongoose-os-libs/ota-http-server
- - origin: https://github.com/mongoose-os-libs/dash
  - origin: https://github.com/tripflex/captive-portal
 

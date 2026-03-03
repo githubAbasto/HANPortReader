@@ -233,6 +233,7 @@ function doSave(){
   var sel=document.getElementById('ssid-sel');
   var ssid=sel.value==='__m__'?document.getElementById('ssid-manual').value.trim():sel.value;
   var fields=[
+    ['wifi.sta.enable',true],
     ['wifi.sta.ssid',ssid],
     ['wifi.sta.pass',document.getElementById('wifi-pass').value],
     ['wifi.sta.hostname',document.getElementById('hostname').value.trim()||'hanreader'],
