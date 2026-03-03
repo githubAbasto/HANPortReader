@@ -242,10 +242,11 @@ RPC.addHandler('HAN.Scan', function(args) {
   if (_scanRunning) { return {started: false}; }
   _scanRunning = true;
   _scanResults = null;
-  RPC.call(null, 'Wifi.Scan', {}, function(res, err) {
+  Wifi.scan(function(results) {
+    print('WiFi scan done, got', results ? results.length : 0, 'networks');
     _scanRunning = false;
-    _scanResults = (res && res.results) ? res.results : [];
-  }, null);
+    _scanResults = results || [];
+  });
   return {started: true};
 });
 
