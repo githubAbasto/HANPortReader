@@ -203,7 +203,7 @@ function prefill(){
     if(!e&&r){
       document.getElementById('mqtt-server').value=r.server||'';
       document.getElementById('mqtt-user').value=r.user||'';
-      document.getElementById('mqtt-pass').value=r.password||'';
+      document.getElementById('mqtt-pass').value=r.pass||'';
     }
   });
   rpc('Config.Get',{key:'site'},function(e,r){
@@ -239,7 +239,7 @@ function doSave(){
     ['wifi.sta.hostname',document.getElementById('hostname').value.trim()||'hanreader'],
     ['mqtt.server',document.getElementById('mqtt-server').value.trim()],
     ['mqtt.user',document.getElementById('mqtt-user').value],
-    ['mqtt.password',document.getElementById('mqtt-pass').value],
+    ['mqtt.pass',document.getElementById('mqtt-pass').value],
     ['site.id',document.getElementById('site-id').value.trim()],
     ['site.position',document.getElementById('site-pos').value.trim()],
   ];

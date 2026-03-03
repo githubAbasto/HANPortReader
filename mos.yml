@@ -11,8 +11,6 @@ config_schema:
   - [mqtt.enable", true]
   - ["mqtt.server", "mqtt.symlink.se:1883"]
   - ["mqtt.user",""]
-  - ["mqtt.password", ""]
-  - ["wifi.sta.enable", true]
   - ["wifi.ap.enable", true]
   - ["wifi.ap.trigger_on_gpio", 0]
   - ["wifi.ap.hostname", "HANReader"]
