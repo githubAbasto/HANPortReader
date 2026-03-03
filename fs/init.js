@@ -233,6 +233,26 @@ function reportState() {
 } 
 
 
+// WiFi scan via polling — avoids long-connection issues.
+// Browser calls HAN.Scan (returns immediately), then polls HAN.ScanResults.
+let _scanRunning = false;
+let _scanResults = null;
+
+RPC.addHandler('HAN.Scan', function(args) {
+  if (_scanRunning) { return {started: false}; }
+  _scanRunning = true;
+  _scanResults = null;
+  RPC.call(null, 'Wifi.Scan', {}, function(res, err) {
+    _scanRunning = false;
+    _scanResults = (res && res.results) ? res.results : [];
+  }, null);
+  return {started: true};
+});
+
+RPC.addHandler('HAN.ScanResults', function(args) {
+  return {running: _scanRunning, results: _scanResults};
+});
+
 // Expose live meter data to local devices (e.g. EVCharger)
 RPC.addHandler('HAN.GetData', function(args) {
   return meterdata;

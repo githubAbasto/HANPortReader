@@ -129,42 +129,6 @@ function rpc(m,p,cb,timeout){
   });
 }
 
-// WebSocket RPC — for Wifi.Scan only, which is async on the ESP32.
-// The HTTP server closes idle connections before the scan finishes (~15s).
-// WebSocket stays open for the full async result. Gracefully degrades if
-// the captive portal browser blocks WebSocket.
-var _ws=null,_wsPending={},_wsCid=1;
-function wsRpc(m,p,cb,timeout){
-  var id=_wsCid++;
-  var done=false;
-  var tid=setTimeout(function(){
-    if(done)return;done=true;
-    delete _wsPending[id];
-    cb('Timeout',null);
-  },timeout||25000);
-  function send(){
-    _ws.send(JSON.stringify({id:id,method:m,params:p||{}}));
-    _wsPending[id]=function(err,res){
-      if(done)return;done=true;clearTimeout(tid);
-      cb(err,res);
-    };
-  }
-  if(_ws&&_ws.readyState===1){send();return;}
-  _ws=new WebSocket('ws://192.168.4.1/rpc');
-  _ws.onopen=function(){send();};
-  _ws.onerror=function(){
-    if(done)return;done=true;clearTimeout(tid);
-    _ws=null;
-    cb('ws-unavailable',null);
-  };
-  _ws.onclose=function(){_ws=null;};
-  _ws.onmessage=function(ev){
-    var r;try{r=JSON.parse(ev.data);}catch(e){return;}
-    var f=_wsPending[r.id];if(!f)return;
-    delete _wsPending[r.id];
-    r.error?f(r.error.message||'RPC error',null):f(null,r.result);
-  };
-}
 
 function setStatus(m,e){var el=document.getElementById('status');el.textContent=m;el.className=e?'err':'';}
 function togglePw(id,btn){var i=document.getElementById(id);i.type=i.type==='password'?'text':'password';btn.textContent=i.type==='password'?'Show':'Hide';}
@@ -173,35 +137,57 @@ document.getElementById('hostname').addEventListener('input',function(){
   document.getElementById('hn-preview').textContent=this.value||'hanreader';
 });
 
+function showNets(results){
+  var sel=document.getElementById('ssid-sel');
+  sel.innerHTML='';
+  if(!results||!results.length){
+    sel.innerHTML='<option value="__m__">Enter manually</option>';
+    document.getElementById('ssid-manual').style.display='block';
+    return;
+  }
+  var nets=results.slice().sort(function(a,b){return b.rssi-a.rssi;});
+  for(var i=0;i<nets.length;i++){
+    var o=document.createElement('option');
+    o.value=nets[i].ssid;
+    o.textContent=nets[i].ssid+' ('+nets[i].rssi+' dBm)';
+    sel.appendChild(o);
+  }
+  var m=document.createElement('option');m.value='__m__';m.textContent='— Enter manually —';
+  sel.appendChild(m);
+  sel.onchange=function(){document.getElementById('ssid-manual').style.display=this.value==='__m__'?'block':'none';};
+}
+
 function doScan(){
   var sel=document.getElementById('ssid-sel');
   sel.innerHTML='<option value="">Scanning…</option>';
   setStatus('Scanning, please wait…');
-  wsRpc('Wifi.Scan',{},function(err,res){
-    sel.innerHTML='';
-    setStatus('');
+  // Start scan (returns immediately — scan runs in background on device)
+  rpc('HAN.Scan',{},function(err){
     if(err){
       sel.innerHTML='<option value="__m__">Enter manually</option>';
       document.getElementById('ssid-manual').style.display='block';
-      if(err!=='ws-unavailable')setStatus('Scan: '+err,true);
+      setStatus('Scan: '+err,true);
       return;
     }
-    if(!res||!res.results||!res.results.length){
-      sel.innerHTML='<option value="__m__">Enter manually</option>';
-      document.getElementById('ssid-manual').style.display='block';
-      return;
+    // Poll for results every 2s, up to 15 attempts (30s max)
+    var attempts=0;
+    function poll(){
+      attempts++;
+      if(attempts>15){
+        showNets([]);
+        setStatus('Scan timed out',true);
+        return;
+      }
+      setTimeout(function(){
+        rpc('HAN.ScanResults',{},function(e,r){
+          if(e||!r||r.running){poll();return;}
+          setStatus('');
+          showNets(r.results);
+        });
+      },2000);
     }
-    var nets=res.results.slice().sort(function(a,b){return b.rssi-a.rssi;});
-    for(var i=0;i<nets.length;i++){
-      var o=document.createElement('option');
-      o.value=nets[i].ssid;
-      o.textContent=nets[i].ssid+' ('+nets[i].rssi+' dBm)';
-      sel.appendChild(o);
-    }
-    var m=document.createElement('option');m.value='__m__';m.textContent='— Enter manually —';
-    sel.appendChild(m);
-    sel.onchange=function(){document.getElementById('ssid-manual').style.display=this.value==='__m__'?'block':'none';};
-  },25000);
+    poll();
+  });
 }
 
 function prefill(){
