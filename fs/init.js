@@ -20,7 +20,7 @@ if (Cfg.get('site.id') === 'mainutilitymeter') {
   let len = devId ? devId.length : 0;
   let siteId = len >= 6 ? ('PC-' + devId.slice(len - 6, len)) : 'PC-000000';
   Cfg.set({site: {id: siteId}});
-  RPC.call('Config.Save', {reboot: false}, function(resp, err) {
+  RPC.call(null, 'Config.Save', {reboot: false}, function(resp, err) {
     print('Auto-assigned site.id:', siteId);
   }, null);
 }
