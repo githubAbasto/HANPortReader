@@ -246,8 +246,12 @@ function doSave(){
   function next(){
     if(i>=fields.length){
       if(errs){setStatus('Some settings failed to save.',true);btn.disabled=false;return;}
-      setStatus('Saved! Rebooting…');
-      setTimeout(function(){rpc('Sys.Reboot',{delay_ms:1000},function(){});},400);
+      setStatus('Saving to flash…');
+      rpc('Config.Save',{reboot:false},function(e){
+        if(e){setStatus('Save failed: '+e,true);btn.disabled=false;return;}
+        setStatus('Saved! Rebooting…');
+        setTimeout(function(){rpc('Sys.Reboot',{delay_ms:1000},function(){});},400);
+      });
       return;
     }
     var cfg={};setKey(cfg,fields[i][0],fields[i][1]);
