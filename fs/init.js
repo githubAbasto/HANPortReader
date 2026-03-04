@@ -33,9 +33,11 @@ if (!currentApSsid || currentApSsid.slice(0, 8) === 'Mongoose') {
   let suffix = len >= 6 ? devId.slice(len - 6, len) : '000000';
   let apSsid = 'PowerConcern_' + suffix;
   Cfg.set({wifi: {ap: {ssid: apSsid}}});
-  RPC.call(null, 'Config.Save', {reboot: false}, function(resp, err) {
-    print('Auto-assigned AP SSID:', apSsid);
-  }, null);
+  RPC.call(null, 'Config.Save', {reboot: false}, null, null);
+  Timer.set(2000, 0, function(ssid) {
+    print('Auto-assigned AP SSID:', ssid, '- rebooting to apply');
+    Sys.reboot(500);
+  }, apSsid);
 }
 
 let result;
@@ -68,7 +70,7 @@ let meterdata = JSON.parse('{"L1ActivePowerIn":"21", "L2ActivePowerIn":22, "L3Ac
 
 
 // --- Watchdog ---
-let APP_TIMEOUT = 30;           // sekunder utan HAN-data = reboot
+let APP_TIMEOUT = 50;           // sekunder utan HAN-data = reboot
 let WIFI_TIMEOUT = 80;        // sekunder utan MQTT-publish = reboot
 
 let lastHanDataTs = Timer.now();

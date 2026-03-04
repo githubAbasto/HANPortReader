@@ -13,7 +13,7 @@ config_schema:
   - ["mqtt.user",""]
   - ["wifi.ap.enable", true]
   - ["wifi.ap.trigger_on_gpio", 0]
-  - ["wifi.ap.hostname", "HANReader"]
+  - ["wifi.ap.hostname", ""]
   - ["wifi.ap.pass", "powerconcern"]
   - ["rpc.enable", true]
   - ["mqtt.enable", true]
