@@ -25,6 +25,19 @@ if (Cfg.get('site.id') === 'mainutilitymeter') {
   }, null);
 }
 
+// Auto-assign AP SSID from device.id on first boot (if still Mongoose default or empty).
+let currentApSsid = Cfg.get('wifi.ap.ssid');
+if (!currentApSsid || currentApSsid.slice(0, 8) === 'Mongoose') {
+  let devId = Cfg.get('device.id');
+  let len = devId ? devId.length : 0;
+  let suffix = len >= 6 ? devId.slice(len - 6, len) : '000000';
+  let apSsid = 'PowerConcern_' + suffix;
+  Cfg.set({wifi: {ap: {ssid: apSsid}}});
+  RPC.call(null, 'Config.Save', {reboot: false}, function(resp, err) {
+    print('Auto-assigned AP SSID:', apSsid);
+  }, null);
+}
+
 let result;
 let discoverySent = false;                       // Has Home Assistant Discovery info been sent?
 let meterproto = [ 
@@ -184,13 +197,13 @@ UART.setDispatcher(2, function(uartNo) {
     }
     //If we are exporting power, add - sign to the current value instead of RMS
     if (meterdata["L1ActivePowerEx"] && meterdata["L1Current"] &&
-        meterdata["L1ActivePowerEx"][0] !== "0000.000" && meterdata["L1Current"][0].at(0) !== 0x2d)
+        meterdata["L1ActivePowerEx"][0] !== "0000.000" && meterdata["L1Current"][0][0] !== '-')
       meterdata["L1Current"][0] = "-" + meterdata["L1Current"][0];
     if (meterdata["L2ActivePowerEx"] && meterdata["L2Current"] &&
-        meterdata["L2ActivePowerEx"][0] !== "0000.000" && meterdata["L2Current"][0].at(0) !== 0x2d)
+        meterdata["L2ActivePowerEx"][0] !== "0000.000" && meterdata["L2Current"][0][0] !== '-')
       meterdata["L2Current"][0] = "-" + meterdata["L2Current"][0];
     if (meterdata["L3ActivePowerEx"] && meterdata["L3Current"] &&
-        meterdata["L3ActivePowerEx"][0] !== "0000.000" && meterdata["L3Current"][0].at(0) !== 0x2d)
+        meterdata["L3ActivePowerEx"][0] !== "0000.000" && meterdata["L3Current"][0][0] !== '-')
       meterdata["L3Current"][0] = "-" + meterdata["L3Current"][0];
   }
 }, null);

@@ -21,7 +21,6 @@ config_schema:
   - ["site.id", "s",  "mainutilitymeter", {title: "Site name/location"}]
   - ["site.position", "s", "wallbox", {title: "Electrical cabinette position"}]
   - ["wifi.sta.hostname", "s", "hanreader", {title: "mDNS hostname (used as hostname.local)"}]
-  - ["mdns.enable", true]
   - ["cportal.enable", "b", true, {title: "Enable WiFi captive portal on device boot"}]
   - ["cportal.index", "s", "index.html", {title: "Filename of HTML file to use when serving the captive portal index file"}]
   - ["cportal.any", "b", true, {title: "Return index file for any non-hostname matching requests"}]

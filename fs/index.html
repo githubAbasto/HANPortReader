@@ -33,6 +33,11 @@ input:focus,select:focus{border-color:#3a7d44;box-shadow:0 0 0 2px #3a7d4420}
 .save-btn:disabled{background:#7aab82;cursor:default}
 #status{max-width:460px;width:100%;text-align:center;margin-top:12px;font-size:0.85rem;min-height:20px;color:#3a7d44;font-weight:600}
 #status.err{color:#c0392b}
+.meter-table{width:100%;border-collapse:collapse;font-size:0.85rem}
+.meter-table th,.meter-table td{padding:5px 8px;border-bottom:1px solid #dde8dd;text-align:right}
+.meter-table th:first-child,.meter-table td:first-child{text-align:left;font-weight:600}
+.meter-table th{color:#3a7d44;font-size:0.75rem;text-transform:uppercase;letter-spacing:.08em}
+.meter-hint{font-size:0.72rem;color:#5a7a5a;margin-top:6px;text-align:right}
 </style>
 </head>
 <body>
@@ -95,6 +100,19 @@ input:focus,select:focus{border-color:#3a7d44;box-shadow:0 0 0 2px #3a7d4420}
       <button class="pw-toggle" type="button" onclick="togglePw('mqtt-pass',this)">Show</button>
     </div>
   </div>
+</div>
+
+<div class="card">
+  <h2>Meter Status</h2>
+  <table class="meter-table">
+    <thead><tr><th>Phase</th><th>Voltage</th><th>Current</th></tr></thead>
+    <tbody>
+      <tr><td>L1</td><td id="v-l1">—</td><td id="a-l1">—</td></tr>
+      <tr><td>L2</td><td id="v-l2">—</td><td id="a-l2">—</td></tr>
+      <tr><td>L3</td><td id="v-l3">—</td><td id="a-l3">—</td></tr>
+    </tbody>
+  </table>
+  <div class="meter-hint" id="meter-hint">Not loaded yet</div>
 </div>
 
 <button class="save-btn" id="save-btn" onclick="doSave()">Save &amp; Reboot</button>
@@ -261,7 +279,32 @@ function doSave(){
   next();
 }
 
-window.onload=prefill;
+function extractVal(v){
+  if(v===null||v===undefined)return '—';
+  if(Array.isArray(v))return v[0];
+  return String(v);
+}
+
+function fetchMeter(){
+  document.getElementById('meter-hint').textContent='Updating…';
+  rpc('HAN.GetData',{},function(err,d){
+    if(err||!d){document.getElementById('meter-hint').textContent='No response';return;}
+    document.getElementById('v-l1').textContent=extractVal(d.L1Voltage)+' V';
+    document.getElementById('v-l2').textContent=extractVal(d.L2Voltage)+' V';
+    document.getElementById('v-l3').textContent=extractVal(d.L3Voltage)+' V';
+    document.getElementById('a-l1').textContent=extractVal(d.L1Current)+' A';
+    document.getElementById('a-l2').textContent=extractVal(d.L2Current)+' A';
+    document.getElementById('a-l3').textContent=extractVal(d.L3Current)+' A';
+    var t=new Date();
+    document.getElementById('meter-hint').textContent='Last updated '+
+      t.getHours().toString().padStart(2,'0')+':'+
+      t.getMinutes().toString().padStart(2,'0')+':'+
+      t.getSeconds().toString().padStart(2,'0');
+  },5000);
+}
+
+setInterval(fetchMeter,10000);
+window.onload=function(){prefill();fetchMeter();};
 </script>
 </body>
 </html>
