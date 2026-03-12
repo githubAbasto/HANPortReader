@@ -11,7 +11,7 @@ let SensorGen = {
       let val = meterdata[key];
 
       // Only include entries that have been populated from UART (stored as [value, unit] arrays)
-      if (!val || typeof(val) !== "object" || val.length < 1) {
+      if (!val || val[0] === undefined) {
         print("SensorGen: skipping key", key, "not yet received from HAN port");
         continue;
       }
@@ -23,7 +23,7 @@ let SensorGen = {
         device_name: "HAN Energy Meter",
         manufacturer: "Custom",
         model: "ESP32-HAN",
-        object_id: key.toLowerCase(),
+        object_id: key,
         friendly_name: key,
         state_topic: stateTopic,
         unit: unit,

@@ -24,9 +24,16 @@ let Discovery = {
   },
 
   publishAll: function(list) {
-    for (let i = 0; i < list.length; i++) {
-      Discovery.publish(list[i]);
-    }
+    // Drip-feed one message per tick to avoid MQTT queue overflow.
+    let state = {i: 0, list: list, tid: 0};
+    state.tid = Timer.set(200, Timer.REPEAT, function(s) {
+      if (s.i >= s.list.length) {
+        Timer.del(s.tid);
+        return;
+      }
+      Discovery.publish(s.list[s.i]);
+      s.i++;
+    }, state);
   },
 
   auto: function(list) {

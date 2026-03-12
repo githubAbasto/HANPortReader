@@ -8,7 +8,7 @@ modules_version: ${mos.version}
 mongoose_os_version: ${mos.version}
 
 config_schema:
-  - [mqtt.enable", true]
+  - ["mqtt.enable", true]
   - ["mqtt.server", "mqtt.symlink.se:1883"]
   - ["mqtt.user",""]
   - ["wifi.ap.enable", true]
@@ -18,12 +18,15 @@ config_schema:
   - ["rpc.enable", true]
   - ["mqtt.enable", true]
   - ["site", "o", {hide: true}]
-  - ["site.id", "s",  "mainutilitymeter", {title: "Site name/location"}]
+  - ["site.id", "s",  "", {title: "Site name/location"}]
   - ["site.position", "s", "wallbox", {title: "Electrical cabinette position"}]
   - ["wifi.sta.hostname", "s", "hanreader", {title: "mDNS hostname (used as hostname.local)"}]
   - ["cportal.enable", "b", true, {title: "Enable WiFi captive portal on device boot"}]
   - ["cportal.index", "s", "index.html", {title: "Filename of HTML file to use when serving the captive portal index file"}]
   - ["cportal.any", "b", true, {title: "Return index file for any non-hostname matching requests"}]
+  - ["dns_sd.enable", "b", true, {title: "Enable mDNS service discovery"}]
+  - ["dns_sd.host_name", "s", "hanreader", {title: "mDNS hostname (keep in sync with wifi.sta.hostname)"}]
+  - ["dns_sd.txt", "s", "PowerConcern HANPort Reader", {title: "mDNS TXT record"}]
 
 
 tags:
@@ -47,4 +50,6 @@ libs:
  - origin: https://github.com/mongoose-os-libs/rpc-service-config
  - origin: https://github.com/mongoose-os-libs/ota-http-server
  - origin: https://github.com/tripflex/captive-portal
+ - origin: https://github.com/mongoose-os-libs/dash
+ - origin: https://github.com/mongoose-os-libs/dns-sd
 

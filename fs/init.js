@@ -5,251 +5,123 @@ load('api_rpc.js');
 load('api_mqtt.js');
 load('api_timer.js');
 load('api_sys.js');
-load('api_uart.js');
-load('discovery.js'); // Home Assistant Discovery module  
-load('sensor_gen.js'); // Sensor generator module based on meterdata struct and Home Assistant Discovery format
+load('discovery.js');
+load('sensor_gen.js');
+load('uart_parser.js'); // defines meterdata, meterproto, protolen, frameIsComplete, lastHanDataTs, WatchdogFeedHan
 
-//configuration parameters
-let online = false;                               // Connected to the cloud?
+// --- Boot config auto-assignment (first boot only) ---
+// Both assignments share one Config.Save to avoid a write race.
+let _devId     = Cfg.get('device.id');
+let _devLen    = _devId ? _devId.length : 0;
+let _devSuffix = _devLen >= 6 ? _devId.slice(_devLen - 6, _devLen) : '000000';
+let _needSave  = false;
+let _apSsid    = '';
 
-// Auto-assign site.id from device.id on first boot (if still factory default).
-// Cfg.get('device.id') is always set by Mongoose OS from the hardware MAC.
-if (Cfg.get('site.id') === 'mainutilitymeter') {
-  let devId = Cfg.get('device.id');
-  print('device.id:', devId);
-  let len = devId ? devId.length : 0;
-  let siteId = len >= 6 ? ('PC-' + devId.slice(len - 6, len)) : 'PC-000000';
+if (Cfg.get('site.id') === '') {
+  let siteId = 'PC-' + _devSuffix;
+  print('Auto-assigning site.id:', siteId);
   Cfg.set({site: {id: siteId}});
-  RPC.call(null, 'Config.Save', {reboot: false}, function(resp, err) {
-    print('Auto-assigned site.id:', siteId);
-  }, null);
+  _needSave = true;
 }
 
-// Auto-assign AP SSID from device.id on first boot (if still Mongoose default or empty).
-let currentApSsid = Cfg.get('wifi.ap.ssid');
-if (!currentApSsid || currentApSsid.slice(0, 8) === 'Mongoose') {
-  let devId = Cfg.get('device.id');
-  let len = devId ? devId.length : 0;
-  let suffix = len >= 6 ? devId.slice(len - 6, len) : '000000';
-  let apSsid = 'PowerConcern_' + suffix;
-  Cfg.set({wifi: {ap: {ssid: apSsid}}});
+let _curApSsid = Cfg.get('wifi.ap.ssid');
+if (!_curApSsid || _curApSsid.slice(0, 8) === 'Mongoose') {
+  _apSsid = 'PowerConcern_' + _devSuffix;
+  print('Auto-assigning AP SSID:', _apSsid);
+  Cfg.set({wifi: {ap: {ssid: _apSsid}}});
+  _needSave = true;
+}
+
+// Keep dns_sd.host_name in sync with wifi.sta.hostname
+let _staHostname = Cfg.get('wifi.sta.hostname');
+if (Cfg.get('dns_sd.host_name') !== _staHostname) {
+  Cfg.set({dns_sd: {host_name: _staHostname}});
+  _needSave = true;
+}
+
+if (_needSave) {
   RPC.call(null, 'Config.Save', {reboot: false}, null, null);
+}
+if (_apSsid) {
   Timer.set(2000, 0, function(ssid) {
-    print('Auto-assigned AP SSID:', ssid, '- rebooting to apply');
+    print('AP SSID set to', ssid, '- rebooting to apply');
     Sys.reboot(500);
-  }, apSsid);
+  }, _apSsid);
 }
 
-let result;
-let discoverySent = false;                       // Has Home Assistant Discovery info been sent?
-let meterproto = [ 
-  ["DateTime","1.0.0"], 
-  ["TotalActivePowerIn","1.8.0"],
-  ["TotalActivePowerEx","2.8.0"],
-  ["ReactivePowerIn","3.7.0"],
-  ["ActivePowerIn","1.7.0"], 
-  ["ActivePowerEx","2.7.0"], 
-  ["L1ActivePowerIn","21.7.0"], 
-  ["L1ActivePowerEx","22.7.0"], 
-  ["L2ActivePowerIn","41.7.0"], 
-  ["L2ActivePowerEx","42.7.0"],
-  ["L3ActivePowerIn","61.7.0"], 
-  ["L3ActivePowerEx","62.7.0"], 
-  ["L1ReactivePowerIn","23.7.0"], 
-  ["L2ReactivePowerIn","43.7.0"], 
-  ["L3ReactivePowerIn","63.7.0"], 
-  ["L1Voltage","32.7.0"], 
-  ["L2Voltage","52.7.0"], 
-  ["L3Voltage","72.7.0"], 
-  ["L1Current","31.7.0"], 
-  ["L2Current","51.7.0"], 
-  ["L3Current","71.7.0"], 
-];
-let protolen= meterproto.length;
-let meterdata = JSON.parse('{"L1ActivePowerIn":"21", "L2ActivePowerIn":22, "L3ActivePowerIn":22, "L1Current":"0.00", "L2Current":"0.00", "L3Current":"0.00" }');
+// --- State ---
+let mqttConnected = false;  // true when MQTT broker connection is up
+let discoverySent = false;
 
+// --- Watchdogs ---
+let MQTT_TIMEOUT = 80;  // seconds without successful MQTT publish → reboot
+let HAN_TIMEOUT  = 50;  // seconds without UART data → reboot
 
-// --- Watchdog ---
-let APP_TIMEOUT = 50;           // sekunder utan HAN-data = reboot
-let WIFI_TIMEOUT = 80;        // sekunder utan MQTT-publish = reboot
-
-let lastHanDataTs = Timer.now();
 let lastMqttOkTs = Timer.now();
-
-// Anropas när MQTT-publish lyckas
-function WatchdogFeedWifi() {
+function WatchdogFeedMqtt() {
   lastMqttOkTs = Timer.now();
 }
 
-// Kontrollera WiFi/MQTT var 15:e sekund
+// WiFi/MQTT watchdog — fires every 15 s
 Timer.set(15000, Timer.REPEAT, function() {
   if (Cfg.get('wifi.sta.ssid') === '') {
-    lastMqttOkTs = Timer.now(); // not yet commissioned, keep watchdog fed silently
+    lastMqttOkTs = Timer.now(); // unconfigured device, suppress watchdog
     return;
   }
   let delta = Timer.now() - lastMqttOkTs;
-
-  // Om vi är online men inte lyckats publicera på länge → WiFi hänger
-  if (online && delta > WIFI_TIMEOUT) {
-    print('WiFi/MQTT watchdog: no successful publish for ' + delta + 's, rebooting');
+  if (mqttConnected && delta > MQTT_TIMEOUT) {
+    print('MQTT watchdog: no publish for', delta, 's, rebooting');
     Sys.reboot(500);
   }
-
-  // Om vi varit offline för länge → WiFi har tappat och återansluter inte
-  if (!online && delta > WIFI_TIMEOUT * 2) {
+  if (!mqttConnected && delta > MQTT_TIMEOUT * 2) {
     print('WiFi watchdog: offline too long, rebooting');
     Sys.reboot(500);
   }
 }, null);
 
-
-
-// Application watchdog – ser till att UART-flödet inte dör tyst
+// HAN data watchdog — fires every 10 s (lastHanDataTs defined in uart_parser.js)
 Timer.set(10000, Timer.REPEAT, function() {
   if (Cfg.get('wifi.sta.ssid') === '') {
-    lastHanDataTs = Timer.now(); // not yet commissioned, keep watchdog fed silently
+    lastHanDataTs = Timer.now(); // unconfigured device, suppress watchdog
     return;
   }
   let delta = Timer.now() - lastHanDataTs;
-  if (delta > APP_TIMEOUT) {
-    //print('HAN data timeout (' + delta + 's), rebooting system');
-    print('HAN data timeout (' , delta , 's), rebooting system');
-
+  if (delta > HAN_TIMEOUT) {
+    print('HAN data timeout (', delta, 's), rebooting');
     Sys.reboot(500);
   }
 }, null);
 
-// Funktion som din UART-parser anropar när data mottagits
-function WatchdogFeedHan() {
-  lastHanDataTs = Timer.now();
-}
-
-function frameIsComplete() {  // Check if we have received all data points in the protocol
-  return Object.keys(meterdata).length === protolen;
-}
-
-//Pin Mapping
-let pin_LED=23;
-
+// --- GPIO ---
+let pin_LED = 23;
 GPIO.set_mode(pin_LED, GPIO.MODE_OUTPUT);
-
 GPIO.setup_output(pin_LED, 0);
 
-UART.setConfig(2, {
-    baudRate:115200, 
-    rxBufSize:1500, 
-    txBufSize:25,
-      esp32: { 
-        gpio: {
-          rx:16,
-          tx:17,
-        },
-      },
-});
-
-// Set dispatcher callback, it will be called whenver new Rx data or space in
-// the Tx buffer becomes available
-UART.setDispatcher(2, function(uartNo) {
-  let ra = UART.readAvail(uartNo);
-  if (ra > 0) {
-    // Received new data: 
-    let data = UART.read(uartNo);
-//    print('Number of characters received:', data.length, '\n\r');
-//    print('Received UART data:', data);
-      WatchdogFeedHan();   // Tala om att vi fått giltig HAN-data
-
-    let lines = [ "1", "2"];
-
-    let cr1=0;
-    let cr2 =0;
-    let i=0;
-    for(i=0;i<data.length;i++){   // Split data into lines ending with carriage return
-      cr1=data.indexOf('\n',cr2);
-      cr2=data.indexOf('\n',cr1+1);
-      if (cr1===-1 ||cr2===-1) {break;}   // end for-loop when cr has not been found. 
-      lines[i]=data.slice(cr1+1+4,cr2-1); // store new line in array of lines. 
-      //print('S:',cr1,'E:',cr2);
-      //print(lines[i]);
-    }
-
-  //  print('Parsed ' , i, ' lines'); // Tell how many lines that where found in the original data
-
-    for (let x=1; x < i; x++) { // find position for start (, end ) and also the * that tells where the unit starts
-      cr1=lines[x].indexOf( '(' , 0);
-      cr2=lines[x].indexOf( ')' ,0);
-      let unitpos = lines[x].indexOf('*',0 );
-      if (unitpos===-1) { // if unit * is missing then use the last )
-        unitpos=cr2;
-        }
-
-      let command = lines[x].slice(0,cr1);    // Parse out command
-      let data = lines[x].slice(cr1+1,unitpos); // Parse out data value 
-      let unit = lines[x].slice(unitpos+1,cr2);  // parse out unit if any... 
-
-      //print (command,":", data," ", unit);
-
-      // walk through the full struct to find the matching command and store the data and unit under the name stated in meterproto array.
-      for (let v=0; v< protolen ;v++) { 
-        if (command===meterproto[v][1]) { // Compare protocol number in current string
-          meterdata[meterproto[v][0]] = [data,unit]; // if above, store data in meterdata json key
-         // print('Mapped ', meterproto[v][0], 'with data ', data, ' ',unit);
-        }
-      }   
-      
-    }
-    //If we are exporting power, add - sign to the current value instead of RMS
-    if (meterdata["L1ActivePowerEx"] && meterdata["L1Current"] &&
-        meterdata["L1ActivePowerEx"][0] !== "0000.000" && meterdata["L1Current"][0][0] !== '-')
-      meterdata["L1Current"][0] = "-" + meterdata["L1Current"][0];
-    if (meterdata["L2ActivePowerEx"] && meterdata["L2Current"] &&
-        meterdata["L2ActivePowerEx"][0] !== "0000.000" && meterdata["L2Current"][0][0] !== '-')
-      meterdata["L2Current"][0] = "-" + meterdata["L2Current"][0];
-    if (meterdata["L3ActivePowerEx"] && meterdata["L3Current"] &&
-        meterdata["L3ActivePowerEx"][0] !== "0000.000" && meterdata["L3Current"][0][0] !== '-')
-      meterdata["L3Current"][0] = "-" + meterdata["L3Current"][0];
+// --- MQTT reporting (every 6 s when connected) ---
+Timer.set(6000, Timer.REPEAT, function() {
+  if (!mqttConnected) { return; }
+  reportState();
+  if (!discoverySent && frameIsComplete()) {
+    let stateTopic = Cfg.get('site.id') + '/' + Cfg.get('site.position') + '/status';
+    let sensors = SensorGen.buildSensors(meterdata, Cfg.get('site.id'), stateTopic);
+    Discovery.auto(sensors);
+    discoverySent = true;
   }
 }, null);
 
-// Enable Rx
-UART.setRxEnabled(2, true);
-
-//Update state every 6 second, and report to cloud if online
-Timer.set(6000, Timer.REPEAT, function() {
-    if (online) {
-    reportState();
-    if (!discoverySent && frameIsComplete()) {  // Wait for a full HAN frame before sending discovery
-      let stateTopic = Cfg.get('site.id') + '/' + Cfg.get('site.position') + '/status';
-      let deviceId = Cfg.get('site.id');
-      let sensors = SensorGen.buildSensors(meterdata, deviceId, stateTopic);
-      Discovery.auto(sensors);
-      discoverySent = true;
-    }
-  }
-}, null) ;
-
-
 function reportState() {
-
-  let sendMQTT = true;
+  if (!MQTT.isConnected()) { return; }
+  let topic   = Cfg.get('site.id') + '/' + Cfg.get('site.position') + '/status';
   let message = JSON.stringify(meterdata);
+  print('== Publishing to', topic, ':', message);
+  if (MQTT.pub(topic, message, 0)) {
+    WatchdogFeedMqtt();
+  } else {
+    print('== MQTT publish failed');
+  }
+}
 
-    if (MQTT.isConnected() && sendMQTT) {
-      let topic = Cfg.get('site.id') + '/'+Cfg.get('site.position')+'/status';
-      print('== Publishing to ' + topic + ':', message);      
-      let ok = MQTT.pub(topic, message, 0 /* QoS */);
-      if (ok) {
-        WatchdogFeedWifi(); // Tala om att vi lyckats publicera på MQTT
-      } else {
-        print('== MQTT publish failed');
-      }
-    } else if (sendMQTT) { 
-     // print('== Not connected!');
-    }
-} 
-
-
-// WiFi scan via polling — avoids long-connection issues.
-// Browser calls HAN.Scan (returns immediately), then polls HAN.ScanResults.
+// --- RPC handlers ---
 let _scanRunning = false;
 let _scanResults = null;
 
@@ -269,26 +141,24 @@ RPC.addHandler('HAN.ScanResults', function(args) {
   return {running: _scanRunning, results: _scanResults};
 });
 
-// Expose live meter data to local devices (e.g. EVCharger)
 RPC.addHandler('HAN.GetData', function(args) {
   return meterdata;
 });
 
-// Expose a lightweight status/identity endpoint
 RPC.addHandler('HAN.GetInfo', function(args) {
   return {
-    site_id: Cfg.get('site.id'),
-    site_position: Cfg.get('site.position'),
-    online: online,
+    site_id:        Cfg.get('site.id'),
+    site_position:  Cfg.get('site.position'),
+    online:         mqttConnected,
     frame_complete: frameIsComplete()
   };
 });
 
+// --- Cloud events ---
 Event.on(Event.CLOUD_CONNECTED, function() {
-  online = true;
- // GPIO.write(17,0); // LED ON wHen connected to cloud 
+  mqttConnected = true;
 }, null);
 
 Event.on(Event.CLOUD_DISCONNECTED, function() {
-  online = false;
+  mqttConnected = false;
 }, null);
