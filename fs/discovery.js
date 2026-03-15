@@ -20,7 +20,7 @@ let Discovery = {
       }
     });
 
-    let ok = MQTT.pub(topic, payload, 0, true);
+    let ok = MQTT.pub(topic, payload, 1, true);
     print('Discovery: pub', topic, ok ? 'ok' : 'FAILED');
   },
 
