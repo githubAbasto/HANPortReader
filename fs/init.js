@@ -32,6 +32,7 @@ if (!_curApSsid || _curApSsid.slice(0, 8) === 'Mongoose') {
   _needSave = true;
 }
 
+
 // Keep dns_sd.host_name in sync with wifi.sta.hostname
 let _staHostname = Cfg.get('wifi.sta.hostname');
 if (Cfg.get('dns_sd.host_name') !== _staHostname) {

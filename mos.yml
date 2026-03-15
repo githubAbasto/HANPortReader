@@ -24,9 +24,10 @@ config_schema:
   - ["cportal.enable", "b", true, {title: "Enable WiFi captive portal on device boot"}]
   - ["cportal.index", "s", "index.html", {title: "Filename of HTML file to use when serving the captive portal index file"}]
   - ["cportal.any", "b", true, {title: "Return index file for any non-hostname matching requests"}]
+  - ["dash.enable", "b", true, {title: "Enable Mongoose OS cloud dashboard"}]
   - ["dns_sd.enable", "b", true, {title: "Enable mDNS service discovery"}]
   - ["dns_sd.host_name", "s", "hanreader", {title: "mDNS hostname (keep in sync with wifi.sta.hostname)"}]
-  - ["dns_sd.txt", "s", "PowerConcern HANPort Reader", {title: "mDNS TXT record"}]
+  #- ["dns_sd.txt", "s", "PowerConcern HANPort Reader", {title: "mDNS TXT record"}]
 
 
 tags:
@@ -43,13 +44,13 @@ libs:
  - origin:  https://github.com/mongoose-os-libs/ca-bundle
  - origin:  https://github.com/mongoose-os-libs/mqtt
  - origin: https://github.com/mongoose-os-libs/wifi
+ - origin: https://github.com/mongoose-os-libs/dns-sd
  - origin: https://github.com/mongoose-os-libs/rpc-service-fs
  - origin: https://github.com/mongoose-os-libs/rpc-uart
- - origin: https://github.com/mongoose-os-libs/rpc-ws
- - origin: https://github.com/mongoose-os-libs/rpc-service-wifi
+ #- origin: https://github.com/mongoose-os-libs/rpc-ws
+ #- origin: https://github.com/mongoose-os-libs/rpc-service-wifi
  - origin: https://github.com/mongoose-os-libs/rpc-service-config
  - origin: https://github.com/mongoose-os-libs/ota-http-server
  - origin: https://github.com/tripflex/captive-portal
  - origin: https://github.com/mongoose-os-libs/dash
- - origin: https://github.com/mongoose-os-libs/dns-sd
-
+ 

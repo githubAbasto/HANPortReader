@@ -20,14 +20,17 @@ let Discovery = {
       }
     });
 
-    MQTT.pub(topic, payload, 1, true);
+    let ok = MQTT.pub(topic, payload, 0, true);
+    print('Discovery: pub', topic, ok ? 'ok' : 'FAILED');
   },
 
   publishAll: function(list) {
     // Drip-feed one message per tick to avoid MQTT queue overflow.
+    print('Discovery: publishing', list.length, 'sensors');
     let state = {i: 0, list: list, tid: 0};
-    state.tid = Timer.set(200, Timer.REPEAT, function(s) {
+    state.tid = Timer.set(300, Timer.REPEAT, function(s) {
       if (s.i >= s.list.length) {
+        print('Discovery: done');
         Timer.del(s.tid);
         return;
       }

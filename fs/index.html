@@ -260,6 +260,7 @@ function doSave(){
     ['mqtt.pass',document.getElementById('mqtt-pass').value],
     ['site.id',document.getElementById('site-id').value.trim()],
     ['site.position',document.getElementById('site-pos').value.trim()],
+    ['dns_sd.enable',true],
   ];
   var i=0,errs=0;
   function next(){
