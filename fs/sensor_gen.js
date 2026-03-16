@@ -18,6 +18,14 @@ let SensorGen = {
 
       let unit = val.length > 1 ? val[1] : "";
 
+      let dc = "";
+      let sc = "measurement";
+      if (unit === "kWh")  { dc = "energy";         sc = "total_increasing"; }
+      else if (unit === "kW")   { dc = "power"; }
+      else if (unit === "A")    { dc = "current"; }
+      else if (unit === "V")    { dc = "voltage"; }
+      else if (unit === "kvar") { dc = "reactive_power"; }
+
       sensors.push({
         device_id: deviceId,
         device_name: deviceId,
@@ -27,6 +35,8 @@ let SensorGen = {
         friendly_name: key,
         state_topic: stateTopic,
         unit: unit,
+        device_class: dc,
+        state_class: sc,
         value_template: "{{ value_json." + key + "[0] }}"
       });
     }

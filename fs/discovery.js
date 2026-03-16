@@ -10,6 +10,8 @@ let Discovery = {
       name: cfg.friendly_name,
       state_topic: cfg.state_topic,
       unit_of_measurement: cfg.unit,
+      device_class: cfg.device_class,
+      state_class: cfg.state_class,
       value_template: cfg.value_template,
       unique_id: cfg.device_id + '_' + cfg.object_id,
       device: {
