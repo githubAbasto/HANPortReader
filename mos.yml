@@ -44,13 +44,12 @@ libs:
  - origin:  https://github.com/mongoose-os-libs/ca-bundle
  - origin:  https://github.com/mongoose-os-libs/mqtt
  - origin: https://github.com/mongoose-os-libs/wifi
- - origin: https://github.com/mongoose-os-libs/dns-sd
  - origin: https://github.com/mongoose-os-libs/rpc-service-fs
  - origin: https://github.com/mongoose-os-libs/rpc-uart
- #- origin: https://github.com/mongoose-os-libs/rpc-ws
- #- origin: https://github.com/mongoose-os-libs/rpc-service-wifi
+ - origin: https://github.com/mongoose-os-libs/rpc-ws
+ - origin: https://github.com/mongoose-os-libs/rpc-service-wifi
  - origin: https://github.com/mongoose-os-libs/rpc-service-config
  - origin: https://github.com/mongoose-os-libs/ota-http-server
  - origin: https://github.com/tripflex/captive-portal
  - origin: https://github.com/mongoose-os-libs/dash
- 
+ - origin: https://github.com/mongoose-os-libs/dns-sd

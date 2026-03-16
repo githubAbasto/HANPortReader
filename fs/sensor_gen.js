@@ -20,9 +20,9 @@ let SensorGen = {
 
       sensors.push({
         device_id: deviceId,
-        device_name: "HAN Energy Meter",
-        manufacturer: "Custom",
-        model: "ESP32-HAN",
+        device_name: deviceId,
+        manufacturer: "PowerConcern",
+        model: "HAN Reader",
         object_id: key,
         friendly_name: key,
         state_topic: stateTopic,

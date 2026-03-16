@@ -55,6 +55,10 @@ input:focus,select:focus{border-color:#3a7d44;box-shadow:0 0 0 2px #3a7d4420}
     <span class="hint">Accessible as <span id="hn-preview">hanreader</span>.local</span>
   </div>
   <div class="field">
+    <label>WiFi status</label>
+    <span class="hint" id="wifi-status">Loading…</span>
+  </div>
+  <div class="field">
     <label for="site-id">Site ID</label>
     <input id="site-id" type="text" placeholder="PC-XXXXXXXX" autocomplete="off">
   </div>
@@ -69,7 +73,10 @@ input:focus,select:focus{border-color:#3a7d44;box-shadow:0 0 0 2px #3a7d4420}
   <div class="field">
     <label>WiFi network</label>
     <div class="scan-row">
-      <select id="ssid-sel"><option value="">-- Tap Scan --</option></select>
+      <select id="ssid-sel">
+        <option value="">-- Tap Scan --</option>
+        <option value="__m__">— Enter manually —</option>
+      </select>
       <button class="scan-btn" onclick="doScan()">Scan</button>
     </div>
     <input id="ssid-manual" type="text" placeholder="Enter SSID manually" autocomplete="off">
@@ -210,11 +217,23 @@ function doScan(){
 
 function prefill(){
   setStatus('Loading config…');
+  document.getElementById('ssid-sel').onchange=function(){
+    document.getElementById('ssid-manual').style.display=this.value==='__m__'?'block':'none';
+  };
+  rpc('Wifi.GetStatus',{},function(e,r){
+    var el=document.getElementById('wifi-status');
+    if(!e&&r&&r.sta_ip){
+      el.textContent=(r.ssid||'connected')+' — IP: '+r.sta_ip;
+    } else {
+      el.textContent='Not connected';
+    }
+  });
   rpc('Config.Get',{key:'wifi.sta'},function(e,r){
     if(!e&&r){
       var s=document.getElementById('ssid-sel');
-      if(r.ssid){s.innerHTML='';var o=document.createElement('option');o.value=r.ssid;o.textContent=r.ssid+' (current)';s.appendChild(o);}
+      if(r.ssid){s.innerHTML='';var o=document.createElement('option');o.value=r.ssid;o.textContent=r.ssid+' (current)';s.appendChild(o);var m=document.createElement('option');m.value='__m__';m.textContent='— Enter manually —';s.appendChild(m);}
       document.getElementById('wifi-pass').value=r.pass||'';
+      s.onchange=function(){document.getElementById('ssid-manual').style.display=this.value==='__m__'?'block':'none';};
     }
   });
   rpc('Config.Get',{key:'mqtt'},function(e,r){
