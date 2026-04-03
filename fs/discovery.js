@@ -24,20 +24,32 @@ let Discovery = {
 
     let ok = MQTT.pub(topic, payload, 1, true);
     print('Discovery: pub', topic, ok ? 'ok' : 'FAILED');
+    return ok;
   },
 
   publishAll: function(list) {
-    // Drip-feed one message per tick to avoid MQTT queue overflow.
+    // Publish one at a time; only advance when MQTT.pub accepts the message.
+    // Poll interval lets messages flow as fast as the buffer allows
+    // without the fixed delay that degraded WiFi responsiveness.
     print('Discovery: publishing', list.length, 'sensors');
-    let state = {i: 0, list: list, tid: 0};
-    state.tid = Timer.set(300, Timer.REPEAT, function(s) {
+    let state = {i: 0, list: list, tid: 0, retries: 0};
+    state.tid = Timer.set(200, Timer.REPEAT, function(s) {
       if (s.i >= s.list.length) {
         print('Discovery: done');
         Timer.del(s.tid);
         return;
       }
-      Discovery.publish(s.list[s.i]);
-      s.i++;
+      let ok = Discovery.publish(s.list[s.i]);
+      if (ok) {
+        s.i++;
+        s.retries = 0;
+      } else {
+        s.retries++;
+        if (s.retries > 25) {
+          print('Discovery: giving up after too many retries at sensor', s.i);
+          Timer.del(s.tid);
+        }
+      }
     }, state);
   },
 
