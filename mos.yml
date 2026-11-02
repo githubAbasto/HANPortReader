@@ -20,6 +20,8 @@ config_schema:
   - ["site", "o", {hide: true}]
   - ["site.id", "s",  "", {title: "Site name/location"}]
   - ["site.position", "s", "wallbox", {title: "Electrical cabinette position"}]
+  - ["han", "o", {hide: true}]
+  - ["han.phase_map", "s", "123", {title: "Phase mapping: which meter phase maps to logical L1/L2/L3"}]
   - ["wifi.sta.hostname", "s", "hanreader", {title: "mDNS hostname (used as hostname.local)"}]
   - ["cportal.enable", "b", true, {title: "Enable WiFi captive portal on device boot"}]
   - ["cportal.index", "s", "index.html", {title: "Filename of HTML file to use when serving the captive portal index file"}]

@@ -38,6 +38,15 @@ input:focus,select:focus{border-color:#3a7d44;box-shadow:0 0 0 2px #3a7d4420}
 .meter-table th:first-child,.meter-table td:first-child{text-align:left;font-weight:600}
 .meter-table th{color:#3a7d44;font-size:0.75rem;text-transform:uppercase;letter-spacing:.08em}
 .meter-hint{font-size:0.72rem;color:#5a7a5a;margin-top:6px;text-align:right}
+.ap-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ap-badge{font-size:0.85rem;font-weight:700}
+.ap-badge.on{color:#2e7d32}
+.ap-badge.off{color:#999}
+.ap-btn{padding:8px 16px;border:none;border-radius:5px;font-size:0.82rem;font-weight:700;cursor:pointer}
+.ap-btn.turn-off{background:#c0392b;color:#fff}
+.ap-btn.turn-off:hover{background:#a93226}
+.ap-btn.turn-on{background:#3a7d44;color:#fff}
+.ap-btn.turn-on:hover{background:#2e6335}
 </style>
 </head>
 <body>
@@ -110,6 +119,22 @@ input:focus,select:focus{border-color:#3a7d44;box-shadow:0 0 0 2px #3a7d4420}
 </div>
 
 <div class="card">
+  <h2>Phase Mapping</h2>
+  <div class="field">
+    <label for="phase-map">Phase order</label>
+    <select id="phase-map">
+      <option value="123">L1→L1, L2→L2, L3→L3 (default)</option>
+      <option value="132">L1→L1, L2→L3, L3→L2</option>
+      <option value="213">L1→L2, L2→L1, L3→L3</option>
+      <option value="231">L1→L2, L2→L3, L3→L1</option>
+      <option value="312">L1→L3, L2→L1, L3→L2</option>
+      <option value="321">L1→L3, L2→L2, L3→L1</option>
+    </select>
+    <span class="hint">Remap if meter phases don't match your breaker box. Requires reboot.</span>
+  </div>
+</div>
+
+<div class="card">
   <h2>Meter Status</h2>
   <table class="meter-table">
     <thead><tr><th>Phase</th><th>Voltage</th><th>Current</th></tr></thead>
@@ -120,6 +145,15 @@ input:focus,select:focus{border-color:#3a7d44;box-shadow:0 0 0 2px #3a7d4420}
     </tbody>
   </table>
   <div class="meter-hint" id="meter-hint">Not loaded yet</div>
+</div>
+
+<div class="card">
+  <h2>WiFi Access Point</h2>
+  <div class="ap-row">
+    <span class="ap-badge off" id="ap-badge">Loading…</span>
+    <button class="ap-btn turn-on" id="ap-btn" onclick="toggleAp()" disabled>…</button>
+  </div>
+  <span class="hint" id="ap-hint">Toggle the built-in WiFi AP. Device will reboot.</span>
 </div>
 
 <button class="save-btn" id="save-btn" onclick="doSave()">Save &amp; Reboot</button>
@@ -250,6 +284,9 @@ function prefill(){
     }
     setStatus('');
   });
+  rpc('Config.Get',{key:'han.phase_map'},function(e,r){
+    if(!e&&r){var sel=document.getElementById('phase-map');if(sel)sel.value=r;}
+  });
   rpc('Config.Get',{key:'wifi.sta.hostname'},function(e,r){
     if(!e&&r){
       var h=typeof r==='string'?r:(r.hostname||'');
@@ -279,6 +316,7 @@ function doSave(){
     ['mqtt.pass',document.getElementById('mqtt-pass').value],
     ['site.id',document.getElementById('site-id').value.trim()],
     ['site.position',document.getElementById('site-pos').value.trim()],
+    ['han.phase_map',document.getElementById('phase-map').value],
     ['dns_sd.enable',true],
   ];
   var i=0,errs=0;
@@ -323,8 +361,60 @@ function fetchMeter(){
   },5000);
 }
 
+var _apEnabled=false;
+var _staOk=false;
+// Turning the AP off is only allowed while the device is connected to WiFi.
+// Without a station connection the AP is the only way to reach the device,
+// so switching it off would leave it unreachable.
+function updateApUi(on){
+  _apEnabled=on;
+  var badge=document.getElementById('ap-badge');
+  var btn=document.getElementById('ap-btn');
+  var hint=document.getElementById('ap-hint');
+  badge.textContent=on?'AP is ON':'AP is OFF';
+  badge.className='ap-badge '+(on?'on':'off');
+  btn.textContent=on?'Turn OFF':'Turn ON';
+  btn.className='ap-btn '+(on?'turn-off':'turn-on');
+  var locked=on&&!_staOk;
+  btn.disabled=locked;
+  hint.textContent=locked?'Connect the device to WiFi before turning the AP off.':
+    'Toggle the built-in WiFi AP. Device will reboot.';
+}
+function checkSta(cb){
+  rpc('Wifi.GetStatus',{},function(e,r){_staOk=!e&&!!r&&!!r.sta_ip;cb();});
+}
+function fetchApState(){
+  checkSta(function(){
+    rpc('Config.Get',{key:'wifi.ap.enable'},function(e,r){
+      if(!e&&r!==null&&r!==undefined){updateApUi(!!r);}
+      else{updateApUi(true);}
+    });
+  });
+}
+function toggleAp(){
+  var btn=document.getElementById('ap-btn');
+  btn.disabled=true;
+  var next=!_apEnabled;
+  // Re-check right before disabling: the connection may have dropped since load.
+  checkSta(function(){
+  if(!next&&!_staOk){
+    setStatus('Not connected to WiFi — the AP must stay on.',true);
+    updateApUi(_apEnabled);
+    return;
+  }
+  rpc('Config.Set',{config:{wifi:{ap:{enable:next}}}},function(e){
+    if(e){setStatus('AP toggle failed: '+e,true);btn.disabled=false;return;}
+    rpc('Config.Save',{reboot:false},function(e2){
+      if(e2){setStatus('AP save failed: '+e2,true);btn.disabled=false;return;}
+      setStatus('AP '+(next?'enabled':'disabled')+'. Rebooting…');
+      setTimeout(function(){rpc('Sys.Reboot',{delay_ms:500},function(){});},400);
+    });
+  });
+  });
+}
+
 setInterval(fetchMeter,10000);
-window.onload=function(){prefill();fetchMeter();};
+window.onload=function(){prefill();fetchMeter();fetchApState();};
 </script>
 </body>
 </html>

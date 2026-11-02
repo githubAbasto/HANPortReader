@@ -40,8 +40,25 @@ if (Cfg.get('dns_sd.host_name') !== _staHostname) {
   _needSave = true;
 }
 
+// Never boot with the AP off and no WiFi configured: the device would be
+// unreachable. The portal refuses to do this, but config can also arrive over
+// RPC directly. The WiFi lib reads wifi.ap.enable at init, so a reboot is needed.
+let _apForced = false;
+if (!Cfg.get('wifi.ap.enable') && Cfg.get('wifi.sta.ssid') === '') {
+  print('AP disabled with no WiFi configured - re-enabling AP');
+  Cfg.set({wifi: {ap: {enable: true}}});
+  _needSave = true;
+  _apForced = true;
+}
+
 if (_needSave) {
   RPC.call(null, 'Config.Save', {reboot: false}, null, null);
+}
+if (_apForced && !_apSsid) {
+  Timer.set(2000, 0, function() {
+    print('AP re-enabled - rebooting to apply');
+    Sys.reboot(500);
+  }, null);
 }
 if (_apSsid) {
   Timer.set(2000, 0, function(ssid) {
@@ -53,6 +70,12 @@ if (_apSsid) {
 // --- State ---
 let mqttConnected = false;  // true when MQTT broker connection is up
 let discoverySent = false;
+
+// Register the HA re-announce hooks now, at boot. The homeassistant/status
+// subscription is only sent to the broker at CONNACK, so it has to be in place
+// before MQTT connects — doing it later (e.g. from Discovery.auto) silently
+// never subscribes.
+Discovery.init();
 
 // --- Watchdogs ---
 let MQTT_TIMEOUT = 80;  // seconds without successful MQTT publish → reboot
@@ -151,7 +174,8 @@ RPC.addHandler('HAN.GetInfo', function(args) {
     site_id:        Cfg.get('site.id'),
     site_position:  Cfg.get('site.position'),
     online:         mqttConnected,
-    frame_complete: frameIsComplete()
+    frame_complete: frameIsComplete(),
+    uptime:         Sys.uptime()
   };
 });
 

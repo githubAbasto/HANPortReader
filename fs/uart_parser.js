@@ -26,6 +26,30 @@ let meterproto = [
 ];
 let protolen = meterproto.length;
 
+// --- Phase remapping (han.phase_map, applied at boot; config change needs reboot) ---
+// Digit k of the map is the meter phase that becomes logical L(k+1), e.g. "231"
+// means L1 <- meter L2, L2 <- meter L3, L3 <- meter L1. Done by renaming the
+// target keys in meterproto so the parser writes each OBIS value straight to its
+// logical key. Permuting meterdata after parsing instead is not idempotent: a
+// dispatcher call carrying only part of a frame would re-permute the stale keys.
+let _phaseMap = Cfg.get('han.phase_map');
+if (_phaseMap === '132' || _phaseMap === '213' || _phaseMap === '231' ||
+    _phaseMap === '312' || _phaseMap === '321') {
+  print('HAN: phase map', _phaseMap);
+  for (let pm = 0; pm < protolen; pm++) {
+    let pname = meterproto[pm][0];
+    if (pname[0] !== 'L') { continue; }
+    let mph = pname[1];  // meter phase digit of this OBIS entry
+    let logical = '';
+    if (_phaseMap[0] === mph) { logical = '1'; }
+    else if (_phaseMap[1] === mph) { logical = '2'; }
+    else if (_phaseMap[2] === mph) { logical = '3'; }
+    if (logical !== '') {
+      meterproto[pm][0] = 'L' + logical + pname.slice(2, pname.length);
+    }
+  }
+}
+
 // Seed with zero readings. All values use [value, unit] arrays for consistency
 // with UART-parsed entries so all consumers see the same structure.
 let meterdata = {

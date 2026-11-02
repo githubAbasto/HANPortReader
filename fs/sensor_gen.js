@@ -18,8 +18,12 @@ let SensorGen = {
 
       let unit = val.length > 1 ? val[1] : "";
 
+      // No unit means a non-numeric reading (DateTime). Leave device_class and
+      // state_class empty so Discovery.publish omits them: HA rejects the whole
+      // config payload on an empty device_class, and state_class=measurement on
+      // a timestamp string makes it reject every state update.
       let dc = "";
-      let sc = "measurement";
+      let sc = unit === "" ? "" : "measurement";
       if (unit === "kWh")  { dc = "energy";         sc = "total_increasing"; }
       else if (unit === "kW")   { dc = "power"; }
       else if (unit === "A")    { dc = "current"; }
