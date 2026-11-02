@@ -11,6 +11,10 @@ config_schema:
   - ["mqtt.enable", true]
   - ["mqtt.server", "mqtt.symlink.se:1883"]
   - ["mqtt.user",""]
+  # QoS 1 messages wait in this queue until PUBACK and overflow drops the
+  # oldest. It must hold all 21 discovery configs so a link drop mid-run
+  # loses none of them.
+  - ["mqtt.max_queue_length", 25]
   - ["wifi.ap.enable", true]
   - ["wifi.ap.trigger_on_gpio", 0]
   - ["wifi.ap.hostname", ""]
